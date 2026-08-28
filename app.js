@@ -125,12 +125,10 @@ function processarEmbaralhamento() {
 
     const tamanho = agrupamento === 'solo' ? 1 : (agrupamento === 'dupla' ? 2 : tamanhoGrupo);
     
-    // Calcula o total de mesas disponíveis apenas na linha de frente (carteira 0) somando todas as salas e fileiras
     const numGruposFrente = numSalas * numFileiras;
     let gruposFrente = Array.from({ length: numGruposFrente }, () => []);
     let grupos = [];
 
-    // Separa os incompativeis dos especiais para espalhá-los primeiro na linha de frente
     let espIncomp = [];
     let espResto = [];
     especiaisList.forEach(a => {
@@ -144,7 +142,6 @@ function processarEmbaralhamento() {
     let queueEspeciais = espIncomp.concat(espResto);
     let indexFrente = 0;
 
-    // Distribui os especiais pulando de mesa em mesa para evitar grupos juntos
     while (queueEspeciais.length > 0) {
         let found = false;
         for (let i = 0; i < numGruposFrente; i++) {
@@ -156,13 +153,12 @@ function processarEmbaralhamento() {
                 break;
             }
         }
-        if (!found) { // Se a linha de frente inteira de todas as salas estiver lotada
+        if (!found) { 
             normais = queueEspeciais.concat(normais);
             break;
         }
     }
 
-    // Preenche os buracos nas carteiras da frente (duplas/grupos) com alunos normais
     for (let i = 0; i < numGruposFrente; i++) {
         while (gruposFrente[i].length < tamanho && normais.length > 0) {
             gruposFrente[i].push(normais.shift());
@@ -172,7 +168,6 @@ function processarEmbaralhamento() {
         }
     }
 
-    // Processar Incompatíveis do RESTO da turma
     let normIncomp = [];
     let normResto = [];
     normais.forEach(a => {
@@ -200,7 +195,6 @@ function processarEmbaralhamento() {
         normaisEspacados = normIncomp.concat(normResto);
     }
 
-    // Agrupa os alunos normais que sentarão do meio para trás
     let currentGroup = [];
     normaisEspacados.forEach(aluno => {
         currentGroup.push(aluno);
@@ -404,6 +398,16 @@ function exportarJSON() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `mapeamento-${estadoAtual.disciplina}-${new Date().getTime()}.json`;
+    a.click();
+}
+
+function exportarMapaPNG() {
+    const canvas = document.getElementById('mapCanvas');
+    if (!canvas) return;
+    
+    const a = document.createElement('a');
+    a.download = `mapa-salas-${estadoAtual.disciplina || 'turma'}-${new Date().getTime()}.png`;
+    a.href = canvas.toDataURL('image/png');
     a.click();
 }
 
