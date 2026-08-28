@@ -4,61 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Embaralhador de Turmas para Provas</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; color: #333; }
-        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }
-        .header h1 { font-size: 28px; margin-bottom: 5px; }
-        .header p { opacity: 0.9; font-size: 14px; }
-        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; padding: 30px; max-height: calc(100vh - 150px); overflow-y: auto; }
-        .form-section, .result-section { display: flex; flex-direction: column; gap: 20px; }
-        .result-section { display: none; }
-        .result-section.active { display: flex; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        label { font-weight: 600; color: #333; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-        input[type="text"], input[type="number"], textarea, select { padding: 10px 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; transition: border-color 0.3s; }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-        textarea { resize: vertical; min-height: 120px; font-family: 'Courier New', monospace; font-size: 13px; }
-        .checkbox-group { display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; padding: 12px; border-radius: 6px; }
-        .checkbox-item { display: flex; align-items: center; gap: 8px; }
-        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #667eea; }
-        .checkbox-item label { margin: 0; text-transform: none; letter-spacing: 0; cursor: pointer; font-size: 13px; font-weight: 500; }
-        .row-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .button-group { display: flex; gap: 10px; margin-top: 10px; }
-        button { padding: 12px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.5px; }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; flex: 1; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3); }
-        .btn-secondary { background: #f0f0f0; color: #333; flex: 1; }
-        .btn-secondary:hover { background: #e0e0e0; }
-        .btn-export { background: #10b981; color: white; font-size: 12px; padding: 8px 12px; }
-        .btn-export:hover { background: #059669; }
-        .tabs { display: flex; gap: 0; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
-        .tab-button { padding: 12px 20px; border: none; background: none; color: #666; cursor: pointer; font-weight: 600; font-size: 13px; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.3s; }
-        .tab-button.active { color: #667eea; border-bottom-color: #667eea; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .map-container { background: #f8f9fa; border-radius: 6px; padding: 15px; overflow-x: auto; }
-        canvas { border: 1px solid #ddd; border-radius: 6px; background: white; display: block; margin: 0 auto; }
-        .list-container { background: #f8f9fa; border-radius: 6px; padding: 15px; max-height: 400px; overflow-y: auto; }
-        .room-list { margin-bottom: 20px; }
-        .room-title { font-weight: 700; color: #667eea; margin-bottom: 10px; font-size: 14px; }
-        .seat { background: white; border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; border-radius: 4px; font-size: 12px; display: grid; grid-template-columns: 30px 1fr 80px; gap: 8px; align-items: center; }
-        .seat.near-teacher { border-left: 4px solid #f59e0b; background: #fffbeb; }
-        .seat-number { background: #667eea; color: white; padding: 4px 8px; border-radius: 3px; font-weight: 600; text-align: center; font-size: 11px; }
-        .student-name { font-weight: 500; }
-        .student-group { font-size: 11px; color: #666; text-align: right; }
-        .error-message { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 6px; border-left: 4px solid #dc2626; display: none; }
-        .error-message.show { display: block; }
-        .success-message { background: #ecfdf5; color: #065f46; padding: 12px; border-radius: 6px; border-left: 4px solid #10b981; display: none; margin-bottom: 15px; }
-        .success-message.show { display: block; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-box { background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center; }
-        .stat-label { font-size: 11px; color: #666; text-transform: uppercase; }
-        .stat-value { font-size: 20px; font-weight: 700; color: #667eea; }
-        @media (max-width: 1024px) { .main-content { grid-template-columns: 1fr; } }
-        @media print { body { background: white; } .form-section, .button-group { display: none; } .header { margin-bottom: 20px; } }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
