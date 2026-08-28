@@ -1,113 +1,220 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html class="dark" lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Embaralhador de Turmas para Provas</title>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Embaralhador de Turmas - SHUFFL_TECH</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="style.css">
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "background": "#14130e",
+                        "surface-container-low": "#1d1c15",
+                        "surface-dim": "#14130e",
+                        "on-secondary-container": "#00686f",
+                        "surface-container-highest": "#36352e",
+                        "surface-bright": "#3b3932",
+                        "on-secondary": "#00363a",
+                        "surface": "#14130e",
+                        "on-background": "#e7e2d8",
+                        "outline": "#969178",
+                        "on-surface-variant": "#ccc7ac",
+                        "surface-variant": "#36352e",
+                        "primary": "#fffaff",
+                        "surface-container-high": "#2b2a23",
+                        "primary-container": "#f4e225",
+                        "secondary": "#d3fbff",
+                        "surface-container-lowest": "#0f0e09",
+                        "glow-yellow": "rgba(244, 226, 37, 0.4)",
+                        "secondary-container": "#00eefc",
+                        "glow-cyan": "rgba(0, 240, 255, 0.4)",
+                        "surface-glass": "rgba(24, 23, 17, 0.7)",
+                        "outline-variant": "#4a4733",
+                        "surface-container": "#212019",
+                        "on-surface": "#e7e2d8"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Space Grotesk"],
+                        "headline-xl": ["Space Grotesk"],
+                        "label-mono": ["Courier Prime"],
+                        "headline-lg-mobile": ["Space Grotesk"],
+                        "headline-lg": ["Space Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #14130e; color: #e7e2d8; }
+        .glass-panel {
+            background: rgba(24, 23, 17, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(74, 71, 51, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        .neon-input:focus { border-color: #00eefc; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); outline: none; }
+        .btn-primary { background-color: #f4e225; color: #1f1c00; transition: all 0.3s ease; }
+        .btn-primary:hover { box-shadow: 0 0 15px rgba(244, 226, 37, 0.4); transform: translateY(-2px); }
+        .btn-secondary { background: transparent; border: 1px solid #00eefc; color: #00eefc; transition: all 0.3s ease; }
+        .btn-secondary:hover { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); background: rgba(0, 238, 252, 0.1); }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0e09; }
+        ::-webkit-scrollbar-thumb { background: #36352e; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4a4733; }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📚 Embaralhador de Turmas para Provas</h1>
-            <p>Organize alunos de forma inteligente respeitando regras e mapeamento</p>
-        </div>
-        <div class="main-content">
-            <div class="form-section" id="formSection">
-                <div class="error-message" id="errorMessage"></div>
-                
-                <div class="form-group">
-                    <label for="disciplina">📖 Disciplina/Matéria</label>
-                    <input type="text" id="disciplina" placeholder="Ex: Robótica, Matemática...">
-                </div>
+<body class="font-body-md text-body-md min-h-screen flex flex-col md:flex-row overflow-x-hidden">
 
-                <div class="form-group">
-                    <label for="alunos">👥 Lista de Alunos</label>
-                    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-                        <button type="button" class="btn-secondary" style="font-size: 12px; padding: 8px;" onclick="document.getElementById('csvInput').click()">
-                            📁 IMPORTAR CSV
-                        </button>
-                        <input type="file" id="csvInput" accept=".csv" style="display: none;" onchange="processarCSV(event)">
-                    </div>
-                    <p style="font-size: 11px; color: #666; margin-bottom: 5px;">
-                        * Formato manual: Nome - Turma<br>
-                        * Formato CSV: Duas colunas (Nome e Turma). Não inclua cabeçalhos.
-                    </p>
-                    <textarea id="alunos" placeholder="Exemplo:&#10;João Silva - 9A&#10;Maria Santos - 9B"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>🏫 Configuração das Salas</label>
-                    <div class="row-inputs">
-                        <div class="form-group"><label for="numSalas">Salas</label><input type="number" id="numSalas" value="2" min="1"></div>
-                        <div class="form-group"><label for="numFileiras">Fileiras</label><input type="number" id="numFileiras" value="5" min="1"></div>
-                        <div class="form-group"><label for="numCarteiras">Carteiras</label><input type="number" id="numCarteiras" value="6" min="1"></div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="agrupamento">👫 Tipo de Agrupamento</label>
-                    <select id="agrupamento">
-                        <option value="solo">Solo (Cada aluno sozinho)</option>
-                        <option value="dupla">Dupla (2 alunos por carteira)</option>
-                        <option value="grupo">Grupo (3+ alunos por carteira)</option>
-                    </select>
-                </div>
-
-                <div class="form-group" id="tamanhoGrupoGroup" style="display: none;">
-                    <label for="tamanhoGrupo">Tamanho do Grupo</label>
-                    <input type="number" id="tamanhoGrupo" value="3" min="2">
-                </div>
-                
-                <div class="form-group">
-                    <label for="regraTurma">🏷️ Regra de Turmas</label>
-                    <select id="regraTurma">
-                        <option value="nenhuma">Ignorar turmas</option>
-                        <option value="separar">Misturar turmas (Evitar alunos da mesma turma próximos)</option>
-                        <option value="agrupar">Agrupar por turma (Manter alunos da mesma turma juntos)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>⚙️ Regras Adicionais</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item"><input type="checkbox" id="proximoProfessor"><label for="proximoProfessor">Alunos especiais perto do professor</label></div>
-                        <div class="checkbox-item"><input type="checkbox" id="mesmaFileira"><label for="mesmaFileira">Permitir agrupamentos aleatórios</label></div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="alunosEspeciais">📍 Alunos Especiais (Frente da Sala)</label>
-                    <textarea id="alunosEspeciais" placeholder="Um nome por linha"></textarea>
-                </div>
-
-                <div class="button-group">
-                    <button class="btn-primary" onclick="embaralhar()">🔀 EMBARALHAR TURMAS</button>
-                    <button class="btn-secondary" onclick="limparFormulario()">🗑️ LIMPAR</button>
-                </div>
+<nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
+    <div class="px-6 mb-8 mt-4">
+        <div class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter">SHUFFL_TECH</div>
+        <div class="flex items-center gap-3 mt-4">
+            <div class="w-10 h-10 rounded-lg bg-surface-variant p-1 flex items-center justify-center text-secondary-container">
+                <span class="material-symbols-outlined">memory</span>
             </div>
-
-            <div class="result-section" id="resultSection">
-                <div class="success-message" id="successMessage"></div>
-                <div class="stats" id="stats"></div>
-                <div class="tabs">
-                    <button class="tab-button active" onclick="mudarAba('mapa', event)">🗺️ Mapa Visual</button>
-                    <button class="tab-button" onclick="mudarAba('lista', event)">📋 Lista Detalhada</button>
-                </div>
-                <div id="mapa" class="tab-content active">
-                    <div class="map-container"><canvas id="mapCanvas"></canvas></div>
-                </div>
-                <div id="lista" class="tab-content">
-                    <div class="list-container" id="listContainer"></div>
-                </div>
-                <div class="button-group">
-                    <button class="btn-export" onclick="imprimirResultado()">🖨️ IMPRIMIR</button>
-                    <button class="btn-export" onclick="exportarJSON()">💾 BAIXAR JSON</button>
-                    <button class="btn-secondary" onclick="voltarFormulario()">← VOLTAR</button>
-                </div>
+            <div>
+                <div class="text-secondary-container font-label-mono text-label-mono font-bold">Core Engine</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v2.5 Stable</div>
             </div>
         </div>
     </div>
-    <script src="app.js"></script>
+    <div class="flex-1 px-4 space-y-2">
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-[0_0_10px_rgba(244,226,37,0.4)] font-label-mono text-label-mono" href="#">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+            <span>Dashboard</span>
+        </a>
+    </div>
+</nav>
+
+<main class="flex-1 w-full md:ml-64 pt-8 px-4 md:px-12 pb-24 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high via-background to-surface-container-lowest">
+    <div class="max-w-5xl mx-auto">
+        <header class="mb-10 text-center md:text-left">
+            <h1 class="font-headline-xl text-headline-xl text-primary mb-2">Embaralhador de Turmas</h1>
+            <p class="text-on-surface-variant font-label-mono text-label-mono max-w-2xl">Terminal logístico de alocação pseudo-aleatória de alunos com isolamento de conflitos.</p>
+        </header>
+
+        <div id="errorMessage" class="error-message mb-6 bg-error/20 text-error border-l-4 border-error p-4 rounded font-label-mono hidden"></div>
+
+        <!-- FORM SECTION -->
+        <div id="formSection" class="glass-panel rounded-xl p-6 mb-10 flex flex-col gap-6">
+            <h2 class="font-headline-lg-mobile text-secondary-container border-b border-outline-variant pb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined">tune</span> Parâmetros do Sistema
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Coluna 1 -->
+                <div class="flex flex-col gap-5">
+                    <div class="form-group flex flex-col gap-2">
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider" for="disciplina">Disciplina</label>
+                        <input type="text" id="disciplina" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-body-md neon-input focus:ring-0" placeholder="Ex: Matemática">
+                    </div>
+
+                    <div class="form-group flex flex-col gap-2">
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Geometria das Salas</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Salas</label><input type="number" id="numSalas" value="2" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2 neon-input"></div>
+                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Fileiras</label><input type="number" id="numFileiras" value="5" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2 neon-input"></div>
+                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Carteiras</label><input type="number" id="numCarteiras" value="6" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2 neon-input"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group flex flex-col gap-2">
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Regras & Agrupamento</label>
+                        <select id="regraTurma" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 neon-input mb-2">
+                            <option value="nenhuma">Ignorar turmas (Caos Total)</option>
+                            <option value="separar">Misturar turmas (Isolamento)</option>
+                            <option value="agrupar">Agrupar por turma (Blocos)</option>
+                        </select>
+                        <select id="agrupamento" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 neon-input">
+                            <option value="solo">Solo (Isolado)</option>
+                            <option value="dupla">Dupla (2 por carteira)</option>
+                            <option value="grupo">Grupo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Coluna 2 -->
+                <div class="flex flex-col gap-5">
+                    <div class="form-group flex flex-col gap-2">
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Lista de Alunos</label>
+                        <div class="flex gap-2 mb-2">
+                            <button type="button" class="btn-secondary px-3 py-1 rounded text-xs font-label-mono flex items-center gap-1" onclick="document.getElementById('csvInput').click()">
+                                <span class="material-symbols-outlined text-[16px]">upload_file</span> IMPORTAR CSV
+                            </button>
+                            <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(event)">
+                        </div>
+                        <textarea id="alunos" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-32" placeholder="Nome - Turma"></textarea>
+                    </div>
+                    
+                    <div class="form-group flex flex-col gap-2">
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Alunos Especiais (Frente)</label>
+                        <textarea id="alunosEspeciais" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-16" placeholder="Um nome por linha"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 flex gap-3">
+                <button type="button" onclick="embaralhar()" class="btn-primary flex-1 py-3 rounded-lg font-bold font-label-mono tracking-widest flex items-center justify-center gap-2 uppercase">
+                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">casino</span> INICIAR PROTOCOLO SHUFFLE
+                </button>
+                <button type="button" onclick="limparFormulario()" class="btn-secondary px-6 rounded-lg font-label-mono flex items-center justify-center">
+                    <span class="material-symbols-outlined">restart_alt</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- RESULTS SECTION -->
+        <div id="resultSection" class="hidden flex-col gap-6">
+            <div id="successMessage" class="bg-glow-cyan/20 border-l-4 border-secondary-container text-secondary-container p-4 rounded font-label-mono"></div>
+            
+            <div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- O app.js injeta o stats aqui -->
+            </div>
+
+            <section class="glass-panel rounded-xl p-6">
+                <header class="flex justify-between items-center mb-6 border-b border-outline-variant pb-4">
+                    <h2 class="font-headline-lg-mobile text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary-container">schema</span> Saída de Dados
+                    </h2>
+                    <div class="flex space-x-1 bg-surface-container-highest p-1 rounded-lg">
+                        <button class="tab-button active px-4 py-2 font-label-mono text-sm rounded-md transition-all text-on-surface-variant hover:text-primary" onclick="mudarAba('mapa', event)">Mapa Visual</button>
+                        <button class="tab-button px-4 py-2 font-label-mono text-sm transition-all rounded-md text-on-surface-variant hover:text-primary" onclick="mudarAba('lista', event)">Lista</button>
+                    </div>
+                </header>
+                
+                <div id="mapa" class="tab-content active overflow-x-auto bg-surface-container p-4 rounded-lg border border-outline-variant">
+                    <canvas id="mapCanvas" class="mx-auto rounded"></canvas>
+                </div>
+                
+                <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2">
+                    <div id="listContainer"></div>
+                </div>
+
+                <div class="mt-6 flex gap-3 border-t border-outline-variant pt-4">
+                    <button class="btn-secondary flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2" onclick="imprimirResultado()">
+                        <span class="material-symbols-outlined">print</span> IMPRIMIR
+                    </button>
+                    <button class="btn-secondary flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2" onclick="exportarJSON()">
+                        <span class="material-symbols-outlined">download</span> JSON
+                    </button>
+                    <button class="btn-secondary flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2" onclick="voltarFormulario()">
+                        <span class="material-symbols-outlined">arrow_back</span> NOVO SHUFFLE
+                    </button>
+                </div>
+            </section>
+        </div>
+
+    </div>
+</main>
+
+<script src="app.js"></script>
 </body>
 </html>
