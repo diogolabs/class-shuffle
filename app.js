@@ -338,6 +338,7 @@ function mudarAba(abaNome, event) {
     
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.add('hidden');
+        content.classList.remove('active');
     });
     
     if(event) {
@@ -346,7 +347,10 @@ function mudarAba(abaNome, event) {
     }
     
     const abaEl = document.getElementById(abaNome);
-    if (abaEl) abaEl.classList.remove('hidden');
+    if (abaEl) {
+        abaEl.classList.remove('hidden');
+        abaEl.classList.add('active');
+    }
 }
 
 function imprimirResultado() { window.print(); }
