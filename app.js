@@ -120,62 +120,103 @@ function processarEmbaralhamento() {
         alunosEmbaralhados = misturados;
     }
 
-    if (incompativeis.length > 0) {
-        const arrayIncompativeis = [];
-        const arrayRestante = [];
+    const especiaisList = alunosEmbaralhados.filter(a => alunosEspeciais.includes(a.nome.toLowerCase()) || alunosEspeciais.includes(a.original.toLowerCase()));
+    let normais = alunosEmbaralhados.filter(a => !especiaisList.includes(a));
 
-        alunosEmbaralhados.forEach(a => {
-            const isIncompativel = incompativeis.some(inc => a.nome.toLowerCase().includes(inc) || a.original.toLowerCase().includes(inc));
-            if (isIncompativel) arrayIncompativeis.push(a);
-            else arrayRestante.push(a);
-        });
+    const tamanho = agrupamento === 'solo' ? 1 : (agrupamento === 'dupla' ? 2 : tamanhoGrupo);
+    
+    // Calcula o total de mesas disponíveis apenas na linha de frente (carteira 0) somando todas as salas e fileiras
+    const numGruposFrente = numSalas * numFileiras;
+    let gruposFrente = Array.from({ length: numGruposFrente }, () => []);
+    let grupos = [];
 
-        if (arrayIncompativeis.length > 0 && arrayRestante.length > 0) {
-            const espacamento = Math.max(1, Math.floor(arrayRestante.length / arrayIncompativeis.length));
-            let resultEspacado = [];
-            let incompIndex = 0;
-            
-            for (let i = 0; i < arrayRestante.length; i++) {
-                if (i > 0 && i % espacamento === 0 && incompIndex < arrayIncompativeis.length) {
-                    resultEspacado.push(arrayIncompativeis[incompIndex]);
-                    incompIndex++;
-                }
-                resultEspacado.push(arrayRestante[i]);
+    // Separa os incompativeis dos especiais para espalhá-los primeiro na linha de frente
+    let espIncomp = [];
+    let espResto = [];
+    especiaisList.forEach(a => {
+        if (incompativeis.some(inc => a.nome.toLowerCase().includes(inc) || a.original.toLowerCase().includes(inc))) {
+            espIncomp.push(a);
+        } else {
+            espResto.push(a);
+        }
+    });
+
+    let queueEspeciais = espIncomp.concat(espResto);
+    let indexFrente = 0;
+
+    // Distribui os especiais pulando de mesa em mesa para evitar grupos juntos
+    while (queueEspeciais.length > 0) {
+        let found = false;
+        for (let i = 0; i < numGruposFrente; i++) {
+            let idx = (indexFrente + i) % numGruposFrente;
+            if (gruposFrente[idx].length < tamanho) {
+                gruposFrente[idx].push(queueEspeciais.shift());
+                indexFrente = idx + 1; 
+                found = true;
+                break;
             }
-            while (incompIndex < arrayIncompativeis.length) {
-                resultEspacado.push(arrayIncompativeis[incompIndex]);
-                incompIndex++;
-            }
-            alunosEmbaralhados = resultEspacado;
+        }
+        if (!found) { // Se a linha de frente inteira de todas as salas estiver lotada
+            normais = queueEspeciais.concat(normais);
+            break;
         }
     }
 
-    const especiais = alunosEmbaralhados.filter(a => alunosEspeciais.includes(a.nome.toLowerCase()) || alunosEspeciais.includes(a.original.toLowerCase()));
-    const normais = alunosEmbaralhados.filter(a => !especiais.includes(a));
-
-    let grupos;
-    if (agrupamento === 'solo') {
-        grupos = especiais.concat(normais).map(a => [a]);
-    } else if (agrupamento === 'dupla') {
-        grupos = criarGrupos(especiais, 2).concat(criarGrupos(normais, 2));
-    } else {
-        grupos = criarGrupos(especiais, tamanhoGrupo).concat(criarGrupos(normais, tamanhoGrupo));
+    // Preenche os buracos nas carteiras da frente (duplas/grupos) com alunos normais
+    for (let i = 0; i < numGruposFrente; i++) {
+        while (gruposFrente[i].length < tamanho && normais.length > 0) {
+            gruposFrente[i].push(normais.shift());
+        }
+        if (gruposFrente[i].length > 0) {
+            grupos.push(gruposFrente[i]);
+        }
     }
 
-    const salas = distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras, especiais);
+    // Processar Incompatíveis do RESTO da turma
+    let normIncomp = [];
+    let normResto = [];
+    normais.forEach(a => {
+        if (incompativeis.some(inc => a.nome.toLowerCase().includes(inc) || a.original.toLowerCase().includes(inc))) {
+            normIncomp.push(a);
+        } else {
+            normResto.push(a);
+        }
+    });
+
+    let normaisEspacados = [];
+    if (normIncomp.length > 0 && normResto.length > 0) {
+        const esp = Math.max(1, Math.floor(normResto.length / normIncomp.length));
+        let idx = 0;
+        for (let i = 0; i < normResto.length; i++) {
+            if (i > 0 && i % esp === 0 && idx < normIncomp.length) {
+                normaisEspacados.push(normIncomp[idx++]);
+            }
+            normaisEspacados.push(normResto[i]);
+        }
+        while (idx < normIncomp.length) {
+            normaisEspacados.push(normIncomp[idx++]);
+        }
+    } else {
+        normaisEspacados = normIncomp.concat(normResto);
+    }
+
+    // Agrupa os alunos normais que sentarão do meio para trás
+    let currentGroup = [];
+    normaisEspacados.forEach(aluno => {
+        currentGroup.push(aluno);
+        if (currentGroup.length === tamanho) {
+            grupos.push(currentGroup);
+            currentGroup = [];
+        }
+    });
+    if (currentGroup.length > 0) grupos.push(currentGroup);
+
+    const salas = distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras, especiaisList);
 
     return {
         disciplina: estadoAtual.disciplina, data: new Date().toLocaleDateString('pt-BR'),
         totalAlunos: alunos.length, numSalas, numFileiras, numCarteiras, agrupamento, salas
     };
-}
-
-function criarGrupos(lista, tamanho) {
-    const grupos = [];
-    for (let i = 0; i < lista.length; i += tamanho) {
-        grupos.push(lista.slice(i, i + tamanho));
-    }
-    return grupos;
 }
 
 function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras, especiais) {
