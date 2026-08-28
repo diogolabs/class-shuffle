@@ -4,6 +4,7 @@ let estadoAtual = {
     alunosEspeciais: [], proximoProfessor: false, mesmaFileira: false, resultado: null
 };
 
+// Exibir campo de tamanho de grupo dinamicamente
 document.getElementById('agrupamento')?.addEventListener('change', function(e) {
     const el = document.getElementById('tamanhoGrupoGroup');
     if (el) el.style.display = e.target.value === 'grupo' ? 'flex' : 'none';
@@ -23,8 +24,12 @@ function embaralhar() {
     
     const formSec = document.getElementById('formSection');
     const resSec = document.getElementById('resultSection');
+    
     if (formSec) formSec.style.display = 'none';
-    if (resSec) resSec.classList.add('active');
+    if (resSec) {
+        resSec.classList.remove('hidden'); // Revela o painel do Tailwind
+        resSec.style.display = 'flex';
+    }
 }
 
 function validarEntrada() {
@@ -62,18 +67,19 @@ function coletarDados() {
     
     const alunosRaw = document.getElementById('alunos')?.value.trim() || '';
     estadoAtual.alunos = alunosRaw.split('\n').filter(a => a.trim()).map(a => {
-        let nome = a.trim();
+        let texto = a.trim();
+        let nome = texto;
         let turma = 'Geral';
-        if (a.includes('-')) {
-            const parts = a.split('-');
-            nome = parts[0].trim();
-            turma = parts[1].trim();
-        } else if (a.includes(',')) {
-            const parts = a.split(',');
-            nome = parts[0].trim();
-            turma = parts[1].trim();
+        
+        const separador = texto.match(/(\s+-\s*|\s*-\s+|[–—,/;|])/);
+        
+        if (separador) {
+            const partes = texto.split(separador[0]);
+            turma = partes.pop().trim();
+            nome = partes.join(separador[0]).trim();
         }
-        return { nome, turma, original: a.trim() };
+        
+        return { nome, turma, original: texto };
     });
 
     estadoAtual.numSalas = parseInt(document.getElementById('numSalas')?.value) || 2;
@@ -172,9 +178,18 @@ function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras, especiai
 
 function exibirResultados(resultado) {
     const statsHtml = `
-        <div class="stat-box"><div class="stat-label">Total Alunos</div><div class="stat-value">${resultado.totalAlunos}</div></div>
-        <div class="stat-box"><div class="stat-label">Salas Usadas</div><div class="stat-value">${resultado.numSalas}</div></div>
-        <div class="stat-box"><div class="stat-label">Vagas Totais</div><div class="stat-value">${resultado.numSalas * resultado.numFileiras * resultado.numCarteiras}</div></div>
+        <div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant flex flex-col items-center justify-center relative overflow-hidden">
+            <span class="text-on-surface-variant text-xs font-label-mono mb-1">TOTAL ALUNOS</span>
+            <span class="font-headline-lg text-primary">${resultado.totalAlunos}</span>
+        </div>
+        <div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant flex flex-col items-center justify-center">
+            <span class="text-on-surface-variant text-xs font-label-mono mb-1">SALAS USADAS</span>
+            <span class="font-headline-lg text-primary">${resultado.numSalas}</span>
+        </div>
+        <div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant flex flex-col items-center justify-center">
+            <span class="text-on-surface-variant text-xs font-label-mono mb-1">VAGAS TOTAIS</span>
+            <span class="font-headline-lg text-secondary-container">${resultado.numSalas * resultado.numFileiras * resultado.numCarteiras}</span>
+        </div>
     `;
     const stEl = document.getElementById('stats');
     if (stEl) stEl.innerHTML = statsHtml;
@@ -184,8 +199,8 @@ function exibirResultados(resultado) {
     
     const sucEl = document.getElementById('successMessage');
     if (sucEl) {
-        sucEl.textContent = `✅ Embaralhamento concluído! ${resultado.data}`;
-        sucEl.classList.add('show');
+        sucEl.innerHTML = `<span class="material-symbols-outlined align-middle mr-2">check_circle</span> Embaralhamento concluído! ${resultado.data}`;
+        sucEl.classList.remove('hidden');
     }
 }
 
@@ -201,7 +216,8 @@ function desenharMapa(resultado) {
     canvas.width = numSalasLinha * (SALA_LARGURA + PADDING) + MARGEM * 2;
     canvas.height = numSalasColuna * (SALA_ALTURA + PADDING) + MARGEM * 2;
 
-    ctx.fillStyle = '#f8f9fa'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Fundo do canvas transparente para herdar o tema escuro
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     resultado.salas.forEach((sala, indSala) => {
         const linha = Math.floor(indSala / numSalasLinha);
@@ -213,15 +229,19 @@ function desenharMapa(resultado) {
 }
 
 function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, resultado) {
-    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2;
+    // Desenha o bloco branco da sala para manter contraste das letras escuras
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#969178'; ctx.lineWidth = 2;
     ctx.fillRect(x, y, largura, altura); ctx.strokeRect(x, y, largura, altura);
-    ctx.fillStyle = '#334155'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'left';
+    
+    ctx.fillStyle = '#14130e'; ctx.font = 'bold 16px Courier Prime, monospace'; ctx.textAlign = 'left';
     ctx.fillText(`SALA ${numSala}`, x + 15, y + 25);
-    ctx.fillStyle = '#334155'; ctx.fillRect(x + largura / 2 - 60, y + 10, 120, 15);
-    ctx.fillStyle = '#ffffff'; ctx.font = '10px Arial'; ctx.textAlign = 'center';
+    
+    ctx.fillStyle = '#36352e'; ctx.fillRect(x + largura / 2 - 60, y + 10, 120, 15);
+    ctx.fillStyle = '#ffffff'; ctx.font = '10px Courier Prime, monospace'; ctx.textAlign = 'center';
     ctx.fillText('LOUSA', x + largura / 2, y + 21);
-    ctx.fillStyle = '#d97706'; ctx.fillRect(x + 15, y + 45, 45, 25);
-    ctx.fillStyle = '#ffffff'; ctx.font = '11px Arial'; ctx.fillText('Prof.', x + 37, y + 62);
+    
+    ctx.fillStyle = '#f4e225'; ctx.fillRect(x + 15, y + 45, 45, 25);
+    ctx.fillStyle = '#1f1c00'; ctx.font = 'bold 11px Courier Prime, monospace'; ctx.fillText('Prof.', x + 37, y + 62);
 
     const numCarteiras = resultado.numCarteiras;
     const numFileiras = resultado.numFileiras;
@@ -243,10 +263,10 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
                 if (carteiraAtual.proximoProfessor) {
                     ctx.fillStyle = '#fef3c7'; ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
                 } else {
-                    ctx.fillStyle = '#e0e7ff'; ctx.strokeStyle = '#667eea'; ctx.lineWidth = 1;
+                    ctx.fillStyle = '#e0e7ff'; ctx.strokeStyle = '#00eefc'; ctx.lineWidth = 1;
                 }
                 ctx.fill(); ctx.stroke();
-                ctx.fillStyle = '#1e293b'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#14130e'; ctx.font = 'bold 10px Courier Prime, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 
                 const stepY = 12;
                 let startY = py + deskH / 2 - ((carteiraAtual.grupo.length - 1) * stepY) / 2;
@@ -267,11 +287,16 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
 function gerarListaDetalhada(resultado) {
     let html = '';
     resultado.salas.forEach((sala, indSala) => {
-        html += `<div class="room-list"><div class="room-title">SALA ${indSala + 1}</div>`;
+        html += `<div class="room-list mb-6"><div class="font-headline-lg-mobile text-primary mb-3">SALA ${indSala + 1}</div>`;
         sala.forEach((carteira, idx) => {
-            const nomes = carteira.grupo.map(a => `<strong>${a.nome}</strong> (${a.turma})`).join(' + ');
-            const proximoClass = carteira.proximoProfessor ? 'near-teacher' : '';
-            html += `<div class="seat ${proximoClass}"><div class="seat-number">${idx + 1}</div><div class="student-name">${nomes}</div>${carteira.proximoProfessor ? '<div class="student-group">👨‍🏫 Frente</div>' : ''}</div>`;
+            const nomes = carteira.grupo.map(a => `<strong class="text-secondary-container">${a.nome}</strong> <span class="text-outline text-xs">(${a.turma})</span>`).join(' + ');
+            const proximoClass = carteira.proximoProfessor ? 'border-l-4 border-primary-container bg-primary-container/10' : 'border border-outline-variant bg-surface-container-low';
+            
+            html += `<div class="p-3 mb-2 rounded flex items-center gap-4 ${proximoClass}">
+                <div class="bg-surface-container-highest text-on-surface px-3 py-1 rounded text-sm font-label-mono">${idx + 1}</div>
+                <div class="flex-1 font-body-md">${nomes}</div>
+                ${carteira.proximoProfessor ? '<div class="text-xs font-label-mono text-primary-container uppercase tracking-widest">Frente</div>' : ''}
+            </div>`;
         });
         html += '</div>';
     });
@@ -280,11 +305,26 @@ function gerarListaDetalhada(resultado) {
 }
 
 function mudarAba(abaNome, event) {
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    if(event) event.target.classList.add('active');
+    // Reseta botões
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('tab-active', 'text-primary');
+        btn.classList.add('text-on-surface-variant');
+    });
+    
+    // Esconde os painéis
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Ativa botão clicado
+    if(event) {
+        event.target.classList.add('tab-active', 'text-primary');
+        event.target.classList.remove('text-on-surface-variant');
+    }
+    
+    // Mostra painel alvo
     const abaEl = document.getElementById(abaNome);
-    if (abaEl) abaEl.classList.add('active');
+    if (abaEl) abaEl.classList.remove('hidden');
 }
 
 function imprimirResultado() { window.print(); }
@@ -303,10 +343,9 @@ function exportarJSON() {
 function voltarFormulario() {
     const resSec = document.getElementById('resultSection');
     const formSec = document.getElementById('formSection');
-    const sucEl = document.getElementById('successMessage');
-    if (resSec) resSec.classList.remove('active');
+    
+    if (resSec) resSec.classList.add('hidden');
     if (formSec) formSec.style.display = 'flex';
-    if (sucEl) sucEl.classList.remove('show');
 }
 
 function limparFormulario() {
@@ -321,13 +360,13 @@ function mostrarErro(mensagem) {
     const errorDiv = document.getElementById('errorMessage');
     if (errorDiv) {
         errorDiv.textContent = mensagem;
-        errorDiv.classList.add('show');
+        errorDiv.classList.remove('hidden');
     }
 }
 
 function limparErro() {
     const errorDiv = document.getElementById('errorMessage');
-    if (errorDiv) errorDiv.classList.remove('show');
+    if (errorDiv) errorDiv.classList.add('hidden');
 }
 
 function processarCSV(event) {
