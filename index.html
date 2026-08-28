@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Embaralhador de Turmas - Diogolabs</title>
+    <title>Mapeador de Turmas - Diogolabs</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -82,7 +82,7 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono text-label-mono font-bold">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v2.5 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v2.7 Stable</div>
             </div>
         </div>
     </div>
@@ -97,7 +97,7 @@
 <main class="flex-1 w-full md:ml-64 pt-8 px-4 md:px-12 pb-24 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high via-background to-surface-container-lowest">
     <div class="max-w-5xl mx-auto">
         <header class="mb-10 text-center md:text-left">
-            <h1 class="font-headline-xl text-headline-xl text-primary mb-2">Embaralhador de Turmas</h1>
+            <h1 class="font-headline-xl text-headline-xl text-primary mb-2">Mapeador de Turmas</h1>
             <p class="text-on-surface-variant font-label-mono text-label-mono max-w-2xl">Terminal logístico de alocação pseudo-aleatória de alunos com isolamento de conflitos.</p>
         </header>
 
@@ -133,7 +133,7 @@
                             <option value="separar">Misturar turmas (Isolamento)</option>
                             <option value="agrupar">Agrupar por turma (Blocos)</option>
                         </select>
-                        <select id="agrupamento" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 neon-input">
+                        <select id="agrupamento" onchange="document.getElementById('tamanhoGrupoGroup').style.display = this.value === 'grupo' ? 'flex' : 'none';" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 neon-input">
                             <option value="solo">Solo (Isolado)</option>
                             <option value="dupla">Dupla (2 por carteira)</option>
                             <option value="grupo">Grupo</option>
@@ -156,19 +156,25 @@
                             </button>
                             <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(event)">
                         </div>
-                        <textarea id="alunos" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-32" placeholder="Nome - Turma"></textarea>
+                        <textarea id="alunos" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-24" placeholder="Nome - Turma"></textarea>
                     </div>
                     
-                    <div class="form-group flex flex-col gap-2">
-                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Alunos Especiais (Frente)</label>
-                        <textarea id="alunosEspeciais" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-16" placeholder="Um nome por linha"></textarea>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="form-group flex flex-col gap-2">
+                            <label class="text-[11px] font-label-mono text-on-surface-variant uppercase tracking-wider">Especiais (Frente)</label>
+                            <textarea id="alunosEspeciais" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
+                        </div>
+                        <div class="form-group flex flex-col gap-2">
+                            <label class="text-[11px] font-label-mono text-error uppercase tracking-wider">Incompatíveis (Separar)</label>
+                            <textarea id="alunosIncompativeis" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="mt-4 flex gap-3">
                 <button type="button" onclick="embaralhar()" class="btn-primary flex-1 py-3 rounded-lg font-bold font-label-mono tracking-widest flex items-center justify-center gap-2 uppercase">
-                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">casino</span> INICIAR EMBARALHAMENTO
+                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dataset</span> INICIAR MAPEAMENTO
                 </button>
                 <button type="button" onclick="limparFormulario()" class="btn-secondary px-6 rounded-lg font-label-mono flex items-center justify-center">
                     <span class="material-symbols-outlined">restart_alt</span>
@@ -178,40 +184,40 @@
 
         <!-- RESULTS SECTION -->
         <div id="resultSection" class="hidden flex-col gap-6">
-            <div id="successMessage" class="bg-glow-cyan/20 border-l-4 border-secondary-container text-secondary-container p-4 rounded font-label-mono"></div>
+            <div id="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded font-label-mono"></div>
             
             <div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- O app.js injeta o stats aqui -->
             </div>
 
-            <section class="glass-panel rounded-xl p-6">
-                <header class="flex justify-between items-center mb-6 border-b border-outline-variant pb-4">
-                    <h2 class="font-headline-lg-mobile text-primary flex items-center gap-2">
-                        <span class="material-symbols-outlined text-secondary-container">schema</span> Saída de Dados
+            <section class="bg-white rounded-xl p-6 shadow-xl text-gray-800">
+                <header class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
+                    <h2 class="font-headline-lg-mobile text-black flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">schema</span> Saída de Dados
                     </h2>
-                    <div class="flex space-x-1 bg-surface-container-highest p-1 rounded-lg">
-                        <button class="tab-button active px-4 py-2 font-label-mono text-sm rounded-md transition-all text-on-surface-variant hover:text-primary" onclick="mudarAba('mapa', event)">Mapa Visual</button>
-                        <button class="tab-button px-4 py-2 font-label-mono text-sm transition-all rounded-md text-on-surface-variant hover:text-primary" onclick="mudarAba('lista', event)">Lista</button>
+                    <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                        <button class="tab-button active bg-white text-black shadow-sm px-4 py-2 font-label-mono text-sm rounded-md transition-all" onclick="mudarAba('mapa', event)">Mapa Visual</button>
+                        <button class="tab-button text-gray-600 hover:text-black px-4 py-2 font-label-mono text-sm transition-all rounded-md" onclick="mudarAba('lista', event)">Lista</button>
                     </div>
                 </header>
                 
-                <div id="mapa" class="tab-content active overflow-x-auto bg-surface-container p-4 rounded-lg border border-outline-variant">
+                <div id="mapa" class="tab-content active overflow-x-auto bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <canvas id="mapCanvas" class="mx-auto rounded"></canvas>
                 </div>
                 
-                <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2">
+                <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div id="listContainer"></div>
                 </div>
 
-                <div class="mt-6 flex gap-3 border-t border-outline-variant pt-4">
-                    <button class="btn-secondary flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2" onclick="imprimirResultado()">
+                <div class="mt-6 flex gap-3 border-t border-gray-200 pt-4">
+                    <button class="flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
                         <span class="material-symbols-outlined">print</span> IMPRIMIR
                     </button>
-                    <button class="btn-secondary flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2" onclick="exportarJSON()">
+                    <button class="flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
                         <span class="material-symbols-outlined">download</span> JSON
                     </button>
-                    <button class="btn-secondary flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2" onclick="voltarFormulario()">
-                        <span class="material-symbols-outlined">arrow_back</span> NOVO EMBARALHAMENTO
+                    <button class="flex-1 py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-gray-900 text-white hover:bg-gray-800 transition-colors" onclick="voltarFormulario()">
+                        <span class="material-symbols-outlined">arrow_back</span> NOVO MAPEAMENTO
                     </button>
                 </div>
             </section>
