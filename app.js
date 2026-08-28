@@ -398,17 +398,23 @@ function exportarJSON() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `mapeamento-${estadoAtual.disciplina}-${new Date().getTime()}.json`;
+    document.body.appendChild(a); // Mobile download fix
     a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function exportarMapaPNG() {
     const canvas = document.getElementById('mapCanvas');
     if (!canvas) return;
     
+    const dataUrl = canvas.toDataURL('image/png');
     const a = document.createElement('a');
+    a.href = dataUrl;
     a.download = `mapa-salas-${estadoAtual.disciplina || 'turma'}-${new Date().getTime()}.png`;
-    a.href = canvas.toDataURL('image/png');
+    document.body.appendChild(a); // Mobile download fix
     a.click();
+    document.body.removeChild(a);
 }
 
 function voltarFormulario() {
