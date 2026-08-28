@@ -162,24 +162,35 @@ function criarGrupos(lista, tamanho, embaralharInterno) {
 
 function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras, especiais) {
     const salas = Array.from({ length: numSalas }, () => []);
-    let indiceGrupo = 0;
+    
+    // Rastreador de quantas cadeiras já foram ocupadas em cada sala individualmente
+    const assentosPorSala = Array(numSalas).fill(0);
 
-    for (let sala = 0; sala < numSalas; sala++) {
-        for (let fileira = 0; fileira < numFileiras; fileira++) {
-            for (let carteira = 0; carteira < numCarteiras; carteira++) {
-                if (indiceGrupo < grupos.length) {
-                    const grupo = grupos[indiceGrupo];
-                    // Verifica se algum aluno do grupo atual está na lista de especiais
-                    const proximoProfessor = especiais.some(e => grupo.some(g => g.nome === e.nome));
-                    
-                    salas[sala].push({
-                        fileira, carteira, grupo, proximoProfessor
-                    });
-                    indiceGrupo++;
-                }
-            }
+    grupos.forEach((grupo, index) => {
+        // Round-Robin: alterna a sala a cada novo grupo/aluno alocado
+        const salaAtual = index % numSalas;
+        const assentoIndex = assentosPorSala[salaAtual];
+        
+        const fileira = Math.floor(assentoIndex / numCarteiras);
+        const carteira = assentoIndex % numCarteiras;
+
+        // Só aloca se ainda houver espaço físico na sala selecionada
+        if (fileira < numFileiras) {
+            const proximoProfessor = especiais.some(e => 
+                grupo.some(g => g.nome.toLowerCase() === e.toLowerCase() || g.original.toLowerCase() === e.toLowerCase())
+            );
+            
+            salas[salaAtual].push({
+                fileira, 
+                carteira, 
+                grupo, 
+                proximoProfessor
+            });
+            
+            assentosPorSala[salaAtual]++;
         }
-    }
+    });
+
     return salas;
 }
 
