@@ -6,37 +6,19 @@
     <title>Embaralhador de Turmas para Provas</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh; padding: 20px; color: #333;
-        }
-        .container {
-            max-width: 1400px; margin: 0 auto; background: white;
-            border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 30px 20px; text-align: center;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }
         .header h1 { font-size: 28px; margin-bottom: 5px; }
         .header p { opacity: 0.9; font-size: 14px; }
-        .main-content {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 30px;
-            padding: 30px; max-height: calc(100vh - 150px); overflow-y: auto;
-        }
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; padding: 30px; max-height: calc(100vh - 150px); overflow-y: auto; }
         .form-section, .result-section { display: flex; flex-direction: column; gap: 20px; }
         .result-section { display: none; }
         .result-section.active { display: flex; }
         .form-group { display: flex; flex-direction: column; gap: 8px; }
         label { font-weight: 600; color: #333; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-        input[type="text"], input[type="number"], textarea, select {
-            padding: 10px 12px; border: 2px solid #ddd; border-radius: 6px;
-            font-size: 14px; font-family: inherit; transition: border-color 0.3s;
-        }
-        input:focus, textarea:focus, select:focus {
-            outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+        input[type="text"], input[type="number"], textarea, select { padding: 10px 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; transition: border-color 0.3s; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
         textarea { resize: vertical; min-height: 120px; font-family: 'Courier New', monospace; font-size: 13px; }
         .checkbox-group { display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; padding: 12px; border-radius: 6px; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; }
@@ -44,10 +26,7 @@
         .checkbox-item label { margin: 0; text-transform: none; letter-spacing: 0; cursor: pointer; font-size: 13px; font-weight: 500; }
         .row-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .button-group { display: flex; gap: 10px; margin-top: 10px; }
-        button {
-            padding: 12px 20px; border: none; border-radius: 6px; font-size: 14px;
-            font-weight: 600; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.5px;
-        }
+        button { padding: 12px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.5px; }
         .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; flex: 1; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3); }
         .btn-secondary { background: #f0f0f0; color: #333; flex: 1; }
@@ -55,11 +34,7 @@
         .btn-export { background: #10b981; color: white; font-size: 12px; padding: 8px 12px; }
         .btn-export:hover { background: #059669; }
         .tabs { display: flex; gap: 0; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
-        .tab-button {
-            padding: 12px 20px; border: none; background: none; color: #666;
-            cursor: pointer; font-weight: 600; font-size: 13px; border-bottom: 3px solid transparent;
-            margin-bottom: -2px; transition: all 0.3s;
-        }
+        .tab-button { padding: 12px 20px; border: none; background: none; color: #666; cursor: pointer; font-weight: 600; font-size: 13px; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.3s; }
         .tab-button.active { color: #667eea; border-bottom-color: #667eea; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -68,11 +43,7 @@
         .list-container { background: #f8f9fa; border-radius: 6px; padding: 15px; max-height: 400px; overflow-y: auto; }
         .room-list { margin-bottom: 20px; }
         .room-title { font-weight: 700; color: #667eea; margin-bottom: 10px; font-size: 14px; }
-        .seat {
-            background: white; border: 1px solid #ddd; padding: 8px; margin-bottom: 6px;
-            border-radius: 4px; font-size: 12px; display: grid; grid-template-columns: 30px 1fr 80px;
-            gap: 8px; align-items: center;
-        }
+        .seat { background: white; border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; border-radius: 4px; font-size: 12px; display: grid; grid-template-columns: 30px 1fr 80px; gap: 8px; align-items: center; }
         .seat.near-teacher { border-left: 4px solid #f59e0b; background: #fffbeb; }
         .seat-number { background: #667eea; color: white; padding: 4px 8px; border-radius: 3px; font-weight: 600; text-align: center; font-size: 11px; }
         .student-name { font-weight: 500; }
@@ -86,11 +57,7 @@
         .stat-label { font-size: 11px; color: #666; text-transform: uppercase; }
         .stat-value { font-size: 20px; font-weight: 700; color: #667eea; }
         @media (max-width: 1024px) { .main-content { grid-template-columns: 1fr; } }
-        @media print {
-            body { background: white; }
-            .form-section, .button-group { display: none; }
-            .header { margin-bottom: 20px; }
-        }
+        @media print { body { background: white; } .form-section, .button-group { display: none; } .header { margin-bottom: 20px; } }
     </style>
 </head>
 <body>
@@ -99,37 +66,36 @@
             <h1>📚 Embaralhador de Turmas para Provas</h1>
             <p>Organize alunos de forma inteligente respeitando regras e mapeamento</p>
         </div>
-
         <div class="main-content">
-            <!-- SEÇÃO DE FORMULÁRIO -->
             <div class="form-section" id="formSection">
                 <div class="error-message" id="errorMessage"></div>
-
+                
                 <div class="form-group">
                     <label for="disciplina">📖 Disciplina/Matéria</label>
                     <input type="text" id="disciplina" placeholder="Ex: Robótica, Matemática...">
                 </div>
 
                 <div class="form-group">
-                    <label for="alunos">👥 Lista de Alunos (Formato: Nome - Turma)</label>
-                    <textarea id="alunos" placeholder="Exemplo:&#10;João Silva - 9A&#10;Maria Santos - 9B&#10;Pedro Oliveira - 9A"></textarea>
+                    <label for="alunos">👥 Lista de Alunos</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                        <button type="button" class="btn-secondary" style="font-size: 12px; padding: 8px;" onclick="document.getElementById('csvInput').click()">
+                            📁 IMPORTAR CSV
+                        </button>
+                        <input type="file" id="csvInput" accept=".csv" style="display: none;" onchange="processarCSV(event)">
+                    </div>
+                    <p style="font-size: 11px; color: #666; margin-bottom: 5px;">
+                        * Formato manual: Nome - Turma<br>
+                        * Formato CSV: Duas colunas (Nome e Turma). Não inclua cabeçalhos.
+                    </p>
+                    <textarea id="alunos" placeholder="Exemplo:&#10;João Silva - 9A&#10;Maria Santos - 9B"></textarea>
                 </div>
 
                 <div class="form-group">
                     <label>🏫 Configuração das Salas</label>
                     <div class="row-inputs">
-                        <div class="form-group">
-                            <label for="numSalas">Número de Salas</label>
-                            <input type="number" id="numSalas" value="2" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="numFileiras">Fileiras por Sala</label>
-                            <input type="number" id="numFileiras" value="5" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="numCarteiras">Carteiras/Fileira</label>
-                            <input type="number" id="numCarteiras" value="6" min="1">
-                        </div>
+                        <div class="form-group"><label for="numSalas">Salas</label><input type="number" id="numSalas" value="2" min="1"></div>
+                        <div class="form-group"><label for="numFileiras">Fileiras</label><input type="number" id="numFileiras" value="5" min="1"></div>
+                        <div class="form-group"><label for="numCarteiras">Carteiras</label><input type="number" id="numCarteiras" value="6" min="1"></div>
                     </div>
                 </div>
 
@@ -157,22 +123,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label>⚙️ Regras de Mapeamento Adicionais</label>
+                    <label>⚙️ Regras Adicionais</label>
                     <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="proximoProfessor">
-                            <label for="proximoProfessor">Alunos especiais perto do professor</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="mesmaFileira">
-                            <label for="mesmaFileira">Permitir duplas aleatórias sem critério direcional</label>
-                        </div>
+                        <div class="checkbox-item"><input type="checkbox" id="proximoProfessor"><label for="proximoProfessor">Alunos especiais perto do professor</label></div>
+                        <div class="checkbox-item"><input type="checkbox" id="mesmaFileira"><label for="mesmaFileira">Permitir agrupamentos aleatórios</label></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="alunosEspeciais">📍 Alunos com Necessidade de Atenção Extra</label>
-                    <textarea id="alunosEspeciais" placeholder="Digite apenas os nomes (um por linha) dos alunos que precisam sentar na frente."></textarea>
+                    <label for="alunosEspeciais">📍 Alunos Especiais (Frente da Sala)</label>
+                    <textarea id="alunosEspeciais" placeholder="Um nome por linha"></textarea>
                 </div>
 
                 <div class="button-group">
@@ -181,26 +141,19 @@
                 </div>
             </div>
 
-            <!-- SEÇÃO DE RESULTADOS -->
             <div class="result-section" id="resultSection">
                 <div class="success-message" id="successMessage"></div>
                 <div class="stats" id="stats"></div>
-
                 <div class="tabs">
                     <button class="tab-button active" onclick="mudarAba('mapa', event)">🗺️ Mapa Visual</button>
                     <button class="tab-button" onclick="mudarAba('lista', event)">📋 Lista Detalhada</button>
                 </div>
-
                 <div id="mapa" class="tab-content active">
-                    <div class="map-container">
-                        <canvas id="mapCanvas"></canvas>
-                    </div>
+                    <div class="map-container"><canvas id="mapCanvas"></canvas></div>
                 </div>
-
                 <div id="lista" class="tab-content">
                     <div class="list-container" id="listContainer"></div>
                 </div>
-
                 <div class="button-group">
                     <button class="btn-export" onclick="imprimirResultado()">🖨️ IMPRIMIR</button>
                     <button class="btn-export" onclick="exportarJSON()">💾 BAIXAR JSON</button>
@@ -212,4 +165,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-
