@@ -263,26 +263,47 @@ function exibirResultados(resultado) {
 }
 
 function desenharMapa(resultado) {
-    const canvas = document.getElementById('mapCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const mapaContainer = document.getElementById('mapa');
+    if (!mapaContainer) return;
     
-    const SALA_LARGURA = 420; const SALA_ALTURA = 350; const MARGEM = 20; const PADDING = 40;
-    const numSalasLinha = Math.ceil(Math.sqrt(resultado.numSalas));
-    const numSalasColuna = Math.ceil(resultado.numSalas / numSalasLinha);
-
-    canvas.width = numSalasLinha * (SALA_LARGURA + PADDING) + MARGEM * 2;
-    canvas.height = numSalasColuna * (SALA_ALTURA + PADDING) + MARGEM * 2;
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    mapaContainer.innerHTML = ''; 
+    
+    const SALA_LARGURA = 420; 
+    const SALA_ALTURA = 350; 
+    const MARGEM = 20;
 
     resultado.salas.forEach((sala, indSala) => {
-        const linha = Math.floor(indSala / numSalasLinha);
-        const coluna = indSala % numSalasLinha;
-        const x = MARGEM + coluna * (SALA_LARGURA + PADDING);
-        const y = MARGEM + linha * (SALA_ALTURA + PADDING);
-        desenharSala(ctx, x, y, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado);
+        const roomCard = document.createElement('div');
+        roomCard.className = 'bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center gap-4';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = SALA_LARGURA + (MARGEM * 2);
+        canvas.height = SALA_ALTURA + (MARGEM * 2);
+        canvas.className = 'rounded border border-gray-100';
+        
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado);
+
+        const btnExportar = document.createElement('button');
+        btnExportar.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors text-sm';
+        btnExportar.innerHTML = `<span class="material-symbols-outlined text-[18px]">image</span> EXPORTAR SALA ${indSala + 1}`;
+        
+        btnExportar.onclick = () => {
+            const dataUrl = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `SALA-${indSala + 1}-${estadoAtual.disciplina || 'mapeamento'}.png`;
+            document.body.appendChild(a); 
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        roomCard.appendChild(canvas);
+        roomCard.appendChild(btnExportar);
+        mapaContainer.appendChild(roomCard);
     });
 }
 
@@ -398,23 +419,10 @@ function exportarJSON() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `mapeamento-${estadoAtual.disciplina}-${new Date().getTime()}.json`;
-    document.body.appendChild(a); // Mobile download fix
+    document.body.appendChild(a); 
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-}
-
-function exportarMapaPNG() {
-    const canvas = document.getElementById('mapCanvas');
-    if (!canvas) return;
-    
-    const dataUrl = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `mapa-salas-${estadoAtual.disciplina || 'turma'}-${new Date().getTime()}.png`;
-    document.body.appendChild(a); // Mobile download fix
-    a.click();
-    document.body.removeChild(a);
 }
 
 function voltarFormulario() {
