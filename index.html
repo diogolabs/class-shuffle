@@ -82,7 +82,7 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono text-label-mono font-bold">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v2.8 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v2.9 Stable</div>
             </div>
         </div>
     </div>
@@ -201,26 +201,23 @@
                     </div>
                 </header>
                 
-                <div id="mapa" class="tab-content active overflow-x-auto bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <canvas id="mapCanvas" class="mx-auto rounded"></canvas>
+                <!-- Aqui as salas individuais serão injetadas -->
+                <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 </div>
                 
                 <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div id="listContainer"></div>
                 </div>
 
-                <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-gray-200 pt-4">
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
                     <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
                         <span class="material-symbols-outlined">print</span> IMPRIMIR
                     </button>
                     <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
                         <span class="material-symbols-outlined">data_object</span> JSON
                     </button>
-                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors" onclick="exportarMapaPNG()">
-                        <span class="material-symbols-outlined">image</span> MAPA PNG
-                    </button>
                     <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-gray-900 text-white hover:bg-gray-800 transition-colors" onclick="voltarFormulario()">
-                        <span class="material-symbols-outlined">arrow_back</span> NOVO
+                        <span class="material-symbols-outlined">arrow_back</span> NOVO MAPEAMENTO
                     </button>
                 </div>
             </section>
