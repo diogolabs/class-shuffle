@@ -8,6 +8,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="style.css">
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://SEU_DOMINIO.com.br/" />
+    <meta property="og:title" content="Mapeador de Turmas - Diogolabs" />
+    <meta property="og:description" content="Terminal logístico de alocação pseudo-aleatória de alunos com isolamento de conflitos." />
+    <meta property="og:image" content="https://SEU_DOMINIO.com.br/capa.png" />
+
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -82,7 +89,7 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono text-label-mono font-bold">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v2.9 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v3.0 Stable</div>
             </div>
         </div>
     </div>
@@ -109,7 +116,7 @@
                 <span class="material-symbols-outlined">tune</span> Parâmetros do Sistema
             </h2>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Coluna 1 -->
                 <div class="flex flex-col gap-5">
                     <div class="form-group flex flex-col gap-2">
@@ -149,7 +156,7 @@
                 <!-- Coluna 2 -->
                 <div class="flex flex-col gap-5">
                     <div class="form-group flex flex-col gap-2">
-                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Lista de Alunos</label>
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Lista Principal de Alunos</label>
                         <div class="flex gap-2 mb-2">
                             <button type="button" class="btn-secondary px-3 py-1 rounded text-xs font-label-mono flex items-center gap-1" onclick="document.getElementById('csvInput').click()">
                                 <span class="material-symbols-outlined text-[16px]">upload_file</span> IMPORTAR CSV
@@ -159,14 +166,21 @@
                         <textarea id="alunos" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-24" placeholder="Nome - Turma"></textarea>
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="form-group flex flex-col gap-2">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="form-group flex flex-col gap-2 relative">
                             <label class="text-[11px] font-label-mono text-on-surface-variant uppercase tracking-wider">Especiais (Frente)</label>
                             <textarea id="alunosEspeciais" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
+                            <div id="dropEspeciais" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
                         </div>
-                        <div class="form-group flex flex-col gap-2">
+                        <div class="form-group flex flex-col gap-2 relative">
                             <label class="text-[11px] font-label-mono text-error uppercase tracking-wider">Incompatíveis (Separar)</label>
                             <textarea id="alunosIncompativeis" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
+                            <div id="dropIncomp" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
+                        </div>
+                        <div class="form-group flex flex-col gap-2 relative">
+                            <label class="text-[11px] font-label-mono text-secondary-container uppercase tracking-wider">Inseparáveis (Juntar)</label>
+                            <textarea id="alunosInseparaveis" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Ex: João, Maria (na mesma linha)"></textarea>
+                            <div id="dropInseparaveis" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
                         </div>
                     </div>
                 </div>
@@ -186,9 +200,7 @@
         <div id="resultSection" class="hidden flex-col gap-6">
             <div id="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded font-label-mono"></div>
             
-            <div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- O app.js injeta o stats aqui -->
-            </div>
+            <div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
 
             <section class="bg-white rounded-xl p-6 shadow-xl text-gray-800">
                 <header class="flex justify-between items-center mb-6 border-b border-gray-200 pb-4">
@@ -201,7 +213,6 @@
                     </div>
                 </header>
                 
-                <!-- Aqui as salas individuais serão injetadas -->
                 <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 </div>
                 
