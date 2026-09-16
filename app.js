@@ -1,11 +1,75 @@
+let turmasCadastradas = [];
 let estadoAtual = {
     disciplina: '', alunos: [], numSalas: 2, numFileiras: 5, numCarteiras: 6,
     agrupamento: 'solo', tamanhoGrupo: 3, regraTurma: 'nenhuma',
-    alunosEspeciais: [], incompativeis: [], inseparaveis: [], proximoProfessor: false, mesmaFileira: false, 
-    resultado: null, selecao: null, isEditMode: true // Define se estamos revisando ou exportando
+    alunosFrente: [], incompativeis: [], inseparaveis: [], alunosPCD: [], 
+    resultado: null, selecao: null, isEditMode: true 
 };
 
-// --- SISTEMA DE AUTOCOMPLETAR (CHIPS) ---
+// --- GERENCIADOR DE TURMAS ---
+function adicionarTurma() {
+    const nomeEl = document.getElementById('nomeTurmaNova');
+    const alunosEl = document.getElementById('alunosTurmaNova');
+    const nome = nomeEl.value.trim() || `Turma ${turmasCadastradas.length + 1}`;
+    const nomesAlunos = alunosEl.value.split('\n').map(a => a.trim()).filter(a => a);
+    
+    if (nomesAlunos.length === 0) return mostrarErro('Insira pelo menos um aluno na turma.');
+    
+    turmasCadastradas.push({ nome, alunos: nomesAlunos });
+    nomeEl.value = '';
+    alunosEl.value = '';
+    renderizarTurmas();
+    limparErro();
+}
+
+function renderizarTurmas() {
+    const container = document.getElementById('turmasContainer');
+    container.innerHTML = turmasCadastradas.map((t, index) => `
+        <div class="bg-surface-variant border border-outline-variant rounded px-3 py-1 flex items-center gap-2 text-sm">
+            <span class="font-bold text-primary">${t.nome}</span>
+            <span class="text-on-surface-variant text-xs">(${t.alunos.length})</span>
+            <button type="button" onclick="removerTurma(${index})" class="text-error hover:text-red-400 ml-1">
+                <span class="material-symbols-outlined text-[14px]">close</span>
+            </button>
+        </div>
+    `).join('');
+}
+
+function removerTurma(index) {
+    turmasCadastradas.splice(index, 1);
+    renderizarTurmas();
+}
+
+function processarCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const linhas = e.target.result.split('\n');
+        const delimitador = e.target.result.includes(';') ? ';' : ',';
+        const inicio = (linhas[0].toLowerCase().includes('nome') ? 1 : 0);
+        
+        const turmasTemp = {};
+        for (let i = inicio; i < linhas.length; i++) {
+            if (!linhas[i].trim()) continue;
+            const col = linhas[i].split(delimitador);
+            const nome = col[0] ? col[0].trim().replace(/["']/g, '') : '';
+            const turmaNome = col[1] ? col[1].trim().replace(/["']/g, '') : 'Geral';
+            if (nome) {
+                if (!turmasTemp[turmaNome]) turmasTemp[turmaNome] = [];
+                turmasTemp[turmaNome].push(nome);
+            }
+        }
+        for (let t in turmasTemp) {
+            turmasCadastradas.push({ nome: t, alunos: turmasTemp[t] });
+        }
+        renderizarTurmas();
+        document.getElementById('csvInput').value = ''; 
+    };
+    reader.readAsText(file, 'ISO-8859-1');
+}
+
+// --- SISTEMA DE AUTOCOMPLETAR ---
 function setupAutocomplete(textareaId, dropdownId, separador) {
     const textarea = document.getElementById(textareaId);
     const dropdown = document.getElementById(dropdownId);
@@ -14,22 +78,15 @@ function setupAutocomplete(textareaId, dropdownId, separador) {
     textarea.addEventListener('input', function() {
         const cursorPosition = textarea.selectionStart;
         const textToCursor = textarea.value.substring(0, cursorPosition);
-        
         let partes = separador === ',' ? textToCursor.split(/[\n,]/) : textToCursor.split('\n');
         const currentTerm = partes[partes.length - 1].trim().toLowerCase();
         
         if (currentTerm.length < 2) {
-            dropdown.classList.add('hidden');
-            return;
+            dropdown.classList.add('hidden'); return;
         }
 
-        const rawAlunos = document.getElementById('alunos').value.split('\n');
-        const nomesDisponiveis = rawAlunos.map(a => {
-            let texto = a.trim();
-            const sep = texto.match(/(\s+-\s*|\s*-\s+|[–—,/;|])/);
-            if (sep) return texto.split(sep[0])[0].trim();
-            return texto;
-        }).filter(n => n.length > 0);
+        const nomesDisponiveis = [];
+        turmasCadastradas.forEach(t => t.alunos.forEach(a => nomesDisponiveis.push(a)));
 
         const matches = nomesDisponiveis.filter(n => n.toLowerCase().includes(currentTerm) && n.toLowerCase() !== currentTerm);
 
@@ -53,7 +110,6 @@ function setupAutocomplete(textareaId, dropdownId, separador) {
 window.selectAutocomplete = function(textareaId, dropdownId, selectedName, separador) {
     const textarea = document.getElementById(textareaId);
     const dropdown = document.getElementById(dropdownId);
-    
     const text = textarea.value;
     const cursorPosition = textarea.selectionStart;
     const textToCursor = text.substring(0, cursorPosition);
@@ -68,9 +124,10 @@ window.selectAutocomplete = function(textareaId, dropdownId, selectedName, separ
     textarea.focus();
 };
 
-setupAutocomplete('alunosEspeciais', 'dropEspeciais', '\n');
+setupAutocomplete('alunosFrente', 'dropFrente', '\n');
 setupAutocomplete('alunosIncompativeis', 'dropIncomp', '\n');
 setupAutocomplete('alunosInseparaveis', 'dropInseparaveis', ',');
+setupAutocomplete('alunosPCD', 'dropPCD', '\n');
 
 
 // --- MOTOR DE MAPEAMENTO ---
@@ -82,35 +139,26 @@ function embaralhar() {
     coletarDados();
     
     estadoAtual.selecao = null; 
-    estadoAtual.isEditMode = true; // Sempre inicia no modo revisão
+    estadoAtual.isEditMode = true; 
     
     const resultado = processarEmbaralhamento();
     estadoAtual.resultado = resultado;
     
     exibirResultados(resultado);
     
-    const formSec = document.getElementById('formSection');
+    document.getElementById('formSection').style.display = 'none';
     const resSec = document.getElementById('resultSection');
-    
-    if (formSec) formSec.style.display = 'none';
-    if (resSec) {
-        resSec.classList.remove('hidden');
-        resSec.style.display = 'flex';
-        
-        // Garante a interface no estado de Revisão
-        document.getElementById('editControls').classList.remove('hidden');
-        document.getElementById('exportControls').classList.add('hidden');
-    }
+    resSec.classList.remove('hidden');
+    resSec.style.display = 'flex';
+    document.getElementById('editControls').classList.remove('hidden');
+    document.getElementById('exportControls').classList.add('hidden');
 }
 
 function validarEntrada() {
     const discEl = document.getElementById('disciplina');
-    const alunosEl = document.getElementById('alunos');
-    if (!discEl || !alunosEl) return '❌ Erro de interface: Recarregue a página.';
-    if (!discEl.value.trim()) return '❌ Por favor, preencha a disciplina';
-    if (!alunosEl.value.trim()) return '❌ Por favor, adicione pelo menos um aluno';
+    if (!discEl) return '❌ Erro de interface: Recarregue a página.';
+    if (turmasCadastradas.length === 0) return '❌ Cadastre ou importe pelo menos uma turma.';
 
-    const numAlunos = alunosEl.value.trim().split('\n').filter(a => a.trim()).length;
     const numSalas = parseInt(document.getElementById('numSalas')?.value) || 1;
     const numFileiras = parseInt(document.getElementById('numFileiras')?.value) || 1;
     const numCarteiras = parseInt(document.getElementById('numCarteiras')?.value) || 1;
@@ -120,28 +168,34 @@ function validarEntrada() {
     if (agrupamento === 'dupla') multiplicador = 2;
     if (agrupamento === 'grupo') multiplicador = parseInt(document.getElementById('tamanhoGrupo')?.value) || 3;
 
-    const capacidadeTotal = numSalas * numFileiras * numCarteiras * multiplicador;
-    if (numAlunos > capacidadeTotal) {
-        return `❌ Não há espaço! Você tem ${numAlunos} alunos, mas apenas ${capacidadeTotal} vagas na configuração atual.`;
+    const numMesas = numSalas * numFileiras * numCarteiras;
+    const capacidadeBase = numMesas * multiplicador;
+    
+    const numAlunos = turmasCadastradas.reduce((acc, t) => acc + t.alunos.length, 0);
+    const pcdRaw = document.getElementById('alunosPCD')?.value || '';
+    const pcdList = pcdRaw.split('\n').filter(a => a.trim()).map(a => a.trim().toLowerCase());
+    
+    let pcdCount = 0;
+    turmasCadastradas.forEach(t => t.alunos.forEach(a => {
+        if (pcdList.some(p => a.toLowerCase().includes(p))) pcdCount++;
+    }));
+
+    const vagasPerdidas = pcdCount * (multiplicador - 1);
+    
+    if (numAlunos + vagasPerdidas > capacidadeBase) {
+        return `❌ Falta espaço! Temos ${numAlunos} alunos (e ${pcdCount} PCDs ocupando mesas sozinhos), mas a capacidade configurada só atende ${capacidadeBase} alunos.`;
     }
     return null;
 }
 
 function coletarDados() {
-    estadoAtual.disciplina = document.getElementById('disciplina')?.value.trim() || '';
-    const alunosRaw = document.getElementById('alunos')?.value.trim() || '';
+    estadoAtual.disciplina = document.getElementById('disciplina')?.value.trim() || 'Mapeamento Geral';
     
-    estadoAtual.alunos = alunosRaw.split('\n').filter(a => a.trim()).map(a => {
-        let texto = a.trim();
-        let nome = texto;
-        let turma = 'Geral';
-        const separador = texto.match(/(\s+-\s*|\s*-\s+|[–—,/;|])/);
-        if (separador) {
-            const partes = texto.split(separador[0]);
-            turma = partes.pop().trim();
-            nome = partes.join(separador[0]).trim();
-        }
-        return { nome, turma, original: texto };
+    estadoAtual.alunos = [];
+    turmasCadastradas.forEach(t => {
+        t.alunos.forEach(nome => {
+            estadoAtual.alunos.push({ nome: nome, turma: t.nome, original: nome });
+        });
     });
 
     estadoAtual.numSalas = parseInt(document.getElementById('numSalas')?.value) || 2;
@@ -151,15 +205,16 @@ function coletarDados() {
     estadoAtual.tamanhoGrupo = parseInt(document.getElementById('tamanhoGrupo')?.value) || 3;
     estadoAtual.regraTurma = document.getElementById('regraTurma')?.value || 'nenhuma';
     
-    estadoAtual.alunosEspeciais = (document.getElementById('alunosEspeciais')?.value || '').split('\n').filter(a => a.trim()).map(a => a.trim().toLowerCase());
+    estadoAtual.alunosFrente = (document.getElementById('alunosFrente')?.value || '').split('\n').filter(a => a.trim()).map(a => a.trim().toLowerCase());
     estadoAtual.incompativeis = (document.getElementById('alunosIncompativeis')?.value || '').split('\n').filter(a => a.trim()).map(a => a.trim().toLowerCase());
+    estadoAtual.alunosPCD = (document.getElementById('alunosPCD')?.value || '').split('\n').filter(a => a.trim()).map(a => a.trim().toLowerCase());
     
     const insepRaw = document.getElementById('alunosInseparaveis')?.value || '';
     estadoAtual.inseparaveis = insepRaw.split('\n').filter(l => l.trim()).map(l => l.split(',').map(n => n.trim().toLowerCase()).filter(n => n));
 }
 
 function processarEmbaralhamento() {
-    const { alunos, numSalas, numFileiras, numCarteiras, agrupamento, tamanhoGrupo, alunosEspeciais, incompativeis, inseparaveis, regraTurma } = estadoAtual;
+    const { alunos, numSalas, numFileiras, numCarteiras, agrupamento, tamanhoGrupo, alunosFrente, incompativeis, inseparaveis, alunosPCD, regraTurma } = estadoAtual;
     let alunosEmbaralhados = [...alunos].sort(() => Math.random() - 0.5);
 
     if (regraTurma === 'agrupar') {
@@ -185,6 +240,10 @@ function processarEmbaralhamento() {
         alunosEmbaralhados = misturados;
     }
 
+    alunosEmbaralhados.forEach(a => {
+        a.pcd = alunosPCD.some(p => a.nome.toLowerCase().includes(p));
+    });
+
     let chunks = [];
     let usedNames = new Set();
     
@@ -198,19 +257,26 @@ function processarEmbaralhamento() {
                     usedNames.add(alunosEmbaralhados[idx].nome);
                 }
             });
-            if (chunk.length > 0) chunks.push(chunk);
+            if (chunk.length > 0) {
+                chunk.pcd = chunk.some(a => a.pcd);
+                chunks.push(chunk);
+            }
         });
     }
     
     alunosEmbaralhados.forEach(a => {
-        if (!usedNames.has(a.nome)) chunks.push([a]);
+        if (!usedNames.has(a.nome)) {
+            let c = [a];
+            c.pcd = a.pcd;
+            chunks.push(c);
+        }
     });
 
-    const isEspecial = (a) => alunosEspeciais.includes(a.nome.toLowerCase()) || alunosEspeciais.includes(a.original.toLowerCase());
+    const isFrente = (a) => alunosFrente.includes(a.nome.toLowerCase()) || alunosFrente.includes(a.original.toLowerCase());
     const isIncompativel = (a) => incompativeis.some(inc => a.nome.toLowerCase().includes(inc) || a.original.toLowerCase().includes(inc));
     
-    let chunksEspeciais = chunks.filter(c => c.some(isEspecial));
-    let chunksNormais = chunks.filter(c => !c.some(isEspecial));
+    let chunksFrente = chunks.filter(c => c.some(isFrente));
+    let chunksNormais = chunks.filter(c => !c.some(isFrente));
     
     function mesclarEspacado(listaIncomp, listaResto) {
         if (listaIncomp.length === 0) return listaResto;
@@ -226,7 +292,7 @@ function processarEmbaralhamento() {
         return resultado;
     }
     
-    let finalEspeciais = mesclarEspacado(chunksEspeciais.filter(c => c.some(isIncompativel)), chunksEspeciais.filter(c => !c.some(isIncompativel)));
+    let finalFrente = mesclarEspacado(chunksFrente.filter(c => c.some(isIncompativel)), chunksFrente.filter(c => !c.some(isIncompativel)));
     let finalNormais = mesclarEspacado(chunksNormais.filter(c => c.some(isIncompativel)), chunksNormais.filter(c => !c.some(isIncompativel)));
 
     const tamanho = agrupamento === 'solo' ? 1 : (agrupamento === 'dupla' ? 2 : tamanhoGrupo);
@@ -234,13 +300,19 @@ function processarEmbaralhamento() {
     let gruposFrente = Array.from({ length: numGruposFrente }, () => []);
     let gruposGerais = [];
     
+    function canFit(desk, chunk) {
+        if (desk.length === 0) return chunk.length <= tamanho;
+        if (desk.some(a => a.pcd) || chunk.pcd) return false;
+        return desk.length + chunk.length <= tamanho;
+    }
+
     let indexFrente = 0;
-    while(finalEspeciais.length > 0) {
-        let chunk = finalEspeciais.shift();
+    while(finalFrente.length > 0) {
+        let chunk = finalFrente.shift();
         let found = false;
         for(let i = 0; i < numGruposFrente; i++) {
             let idx = (indexFrente + i) % numGruposFrente;
-            if (gruposFrente[idx].length + chunk.length <= tamanho) {
+            if (canFit(gruposFrente[idx], chunk)) {
                 gruposFrente[idx] = gruposFrente[idx].concat(chunk);
                 indexFrente = idx + 1;
                 found = true; break;
@@ -250,15 +322,16 @@ function processarEmbaralhamento() {
     }
     
     for(let i = 0; i < numGruposFrente; i++) {
-        while(gruposFrente[i].length < tamanho && finalNormais.length > 0) {
+        while(finalNormais.length > 0) {
             let chunk = finalNormais[0];
-            if (gruposFrente[i].length + chunk.length <= tamanho) {
+            if (canFit(gruposFrente[i], chunk)) {
                 gruposFrente[i] = gruposFrente[i].concat(finalNormais.shift());
             } else {
-                let fitIdx = finalNormais.findIndex(c => gruposFrente[i].length + c.length <= tamanho);
+                let fitIdx = finalNormais.findIndex(c => canFit(gruposFrente[i], c));
                 if (fitIdx !== -1) {
                     gruposFrente[i] = gruposFrente[i].concat(finalNormais.splice(fitIdx, 1)[0]);
                 } else {
+                    if (gruposFrente[i].some(a => a.pcd) || finalNormais[0].pcd) break;
                     let space = tamanho - gruposFrente[i].length;
                     gruposFrente[i] = gruposFrente[i].concat(finalNormais[0].splice(0, space));
                     if (finalNormais[0].length === 0) finalNormais.shift();
@@ -272,21 +345,26 @@ function processarEmbaralhamento() {
     let currentDesk = [];
     while(finalNormais.length > 0) {
         let chunk = finalNormais[0];
-        if (currentDesk.length + chunk.length <= tamanho) {
+        if (canFit(currentDesk, chunk)) {
             currentDesk = currentDesk.concat(finalNormais.shift());
-            if (currentDesk.length === tamanho) {
+            if (currentDesk.length === tamanho || currentDesk.some(a=>a.pcd)) {
                 gruposGerais.push(currentDesk);
                 currentDesk = [];
             }
         } else {
-            let fitIdx = finalNormais.findIndex(c => currentDesk.length + c.length <= tamanho);
+            let fitIdx = finalNormais.findIndex(c => canFit(currentDesk, c));
             if (fitIdx !== -1) {
                 currentDesk = currentDesk.concat(finalNormais.splice(fitIdx, 1)[0]);
-                if (currentDesk.length === tamanho) {
+                if (currentDesk.length === tamanho || currentDesk.some(a=>a.pcd)) {
                     gruposGerais.push(currentDesk);
                     currentDesk = [];
                 }
             } else {
+                if (currentDesk.some(a=>a.pcd) || finalNormais[0].pcd) {
+                    gruposGerais.push(currentDesk);
+                    currentDesk = [];
+                    continue;
+                }
                 let space = tamanho - currentDesk.length;
                 currentDesk = currentDesk.concat(finalNormais[0].splice(0, space));
                 if (finalNormais[0].length === 0) finalNormais.shift();
@@ -297,8 +375,7 @@ function processarEmbaralhamento() {
     }
     if (currentDesk.length > 0) gruposGerais.push(currentDesk);
     
-    const flatEspeciais = alunosEspeciais;
-    const salas = distribuirEmSalas(gruposGerais, numSalas, numFileiras, numCarteiras, flatEspeciais);
+    const salas = distribuirEmSalas(gruposGerais, numSalas, numFileiras, numCarteiras, alunosFrente);
 
     return {
         disciplina: estadoAtual.disciplina, data: new Date().toLocaleDateString('pt-BR'),
@@ -306,7 +383,7 @@ function processarEmbaralhamento() {
     };
 }
 
-function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras, especiais) {
+function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras, alunosFrente) {
     const salas = Array.from({ length: numSalas }, () => []);
     const assentosPorSala = Array(numSalas).fill(0);
 
@@ -317,7 +394,7 @@ function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras, especiai
         const carteira = Math.floor(assentoIndex / numFileiras); 
 
         if (carteira < numCarteiras) { 
-            const proximoProfessor = grupo.some(g => especiais.includes(g.nome.toLowerCase()) || especiais.includes(g.original.toLowerCase()));
+            const proximoProfessor = grupo.some(g => alunosFrente.includes(g.nome.toLowerCase()) || alunosFrente.includes(g.original.toLowerCase()));
             salas[salaAtual].push({ fileira, carteira, grupo, proximoProfessor });
             assentosPorSala[salaAtual]++;
         }
@@ -341,36 +418,31 @@ function exibirResultados(resultado) {
         </div>
     `;
     document.getElementById('stats').innerHTML = statsHtml;
-    
     desenharMapa(resultado);
     gerarListaDetalhada(resultado);
 }
 
 
-// --- LÓGICA DOS ESTADOS (TRAVA E DESTRAVA) ---
+// --- ESTADOS (TRAVA E DESTRAVA) ---
 function travarMapa() {
     estadoAtual.isEditMode = false;
     estadoAtual.selecao = null;
-    
     document.getElementById('editControls').classList.add('hidden');
     document.getElementById('exportControls').classList.remove('hidden');
-    
     desenharMapa(estadoAtual.resultado);
 }
 
 function destravarMapa() {
     estadoAtual.isEditMode = true;
-    
     document.getElementById('editControls').classList.remove('hidden');
     document.getElementById('exportControls').classList.add('hidden');
-    
     desenharMapa(estadoAtual.resultado);
 }
 
 
-// --- LÓGICA DE EDIÇÃO: TROCA DE ALUNOS ---
+// --- TROCA DE ALUNOS ---
 function processarCliqueCarteira(salaIndex, coluna, linha) {
-    if (!estadoAtual.isEditMode) return; // Bloqueia cliques se estiver travado
+    if (!estadoAtual.isEditMode) return; 
 
     if (!estadoAtual.selecao) {
         estadoAtual.selecao = { salaIndex, fileira: coluna, carteira: linha };
@@ -412,7 +484,6 @@ function processarCliqueCarteira(salaIndex, coluna, linha) {
 function desenharMapa(resultado) {
     const mapaContainer = document.getElementById('mapa');
     mapaContainer.innerHTML = ''; 
-    
     const SALA_LARGURA = 420; const SALA_ALTURA = 350; const MARGEM = 20;
 
     resultado.salas.forEach((sala, indSala) => {
@@ -423,7 +494,6 @@ function desenharMapa(resultado) {
         canvas.width = SALA_LARGURA + (MARGEM * 2);
         canvas.height = SALA_ALTURA + (MARGEM * 2);
         
-        // Estética do canvas muda dependendo do modo
         if (estadoAtual.isEditMode) {
             canvas.className = 'rounded border border-gray-200 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all';
         } else {
@@ -431,8 +501,7 @@ function desenharMapa(resultado) {
         }
         
         canvas.addEventListener('click', function(e) {
-            if (!estadoAtual.isEditMode) return; // Bloqueia captura de toques
-
+            if (!estadoAtual.isEditMode) return; 
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -462,26 +531,20 @@ function desenharMapa(resultado) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado);
-
         roomCard.appendChild(canvas);
         
-        // Os botões individuais de PNG só aparecem quando o mapa está travado
         if (!estadoAtual.isEditMode) {
             const btnExportar = document.createElement('button');
             btnExportar.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors text-sm font-bold';
             btnExportar.innerHTML = `<span class="material-symbols-outlined text-[18px]">image</span> EXPORTAR SALA ${indSala + 1}`;
-            
             btnExportar.onclick = () => {
                 const a = document.createElement('a');
                 a.href = canvas.toDataURL('image/png');
                 a.download = `SALA-${indSala + 1}-${estadoAtual.disciplina || 'mapeamento'}.png`;
-                document.body.appendChild(a); 
-                a.click();
-                document.body.removeChild(a);
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
             };
             roomCard.appendChild(btnExportar);
         }
-        
         mapaContainer.appendChild(roomCard);
     });
 }
@@ -522,9 +585,7 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
 
             if (isSelecionada) {
                 if (ctx.setLineDash) ctx.setLineDash([4, 4]);
-                ctx.fillStyle = '#fef08a'; 
-                ctx.strokeStyle = '#eab308';
-                ctx.lineWidth = 3;
+                ctx.fillStyle = '#fef08a'; ctx.strokeStyle = '#eab308'; ctx.lineWidth = 3;
             } else if (carteiraAtual) {
                 if (ctx.setLineDash) ctx.setLineDash([]);
                 ctx.fillStyle = carteiraAtual.proximoProfessor ? '#fef3c7' : '#e0e7ff'; 
@@ -539,14 +600,22 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
             if (ctx.setLineDash) ctx.setLineDash([]); 
             
             if (carteiraAtual) {
+                const hasPCD = carteiraAtual.grupo.some(a => a.pcd);
                 ctx.fillStyle = '#111827'; ctx.font = 'bold 10px Courier Prime, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 const stepY = 12;
-                let startY = py + deskH / 2 - ((carteiraAtual.grupo.length - 1) * stepY) / 2;
+                
+                let startY = py + deskH / 2 - ((carteiraAtual.grupo.length - 1 + (hasPCD ? 1 : 0)) * stepY) / 2;
                 carteiraAtual.grupo.forEach(a => {
                     const parts = a.nome.split(' ');
                     ctx.fillText(parts[0] + (parts.length > 1 ? ' ' + parts[parts.length-1].charAt(0) + '.' : ''), px + deskW / 2, startY);
                     startY += stepY;
                 });
+                
+                if (hasPCD) {
+                    ctx.fillStyle = '#ef4444'; 
+                    ctx.font = 'bold 9px Courier Prime, monospace';
+                    ctx.fillText('[+ Auxiliar]', px + deskW / 2, startY);
+                }
             }
         }
     }
@@ -557,11 +626,12 @@ function gerarListaDetalhada(resultado) {
     resultado.salas.forEach((sala, indSala) => {
         html += `<div class="room-list mb-6"><div class="font-headline-lg-mobile text-black mb-3 border-b border-gray-200 pb-2">SALA ${indSala + 1}</div>`;
         sala.forEach((carteira, idx) => {
+            const hasPCD = carteira.grupo.some(a => a.pcd);
             const nomes = carteira.grupo.map(a => `<strong class="text-black">${a.nome}</strong> <span class="text-gray-500 text-xs">(${a.turma})</span>`).join(' + ');
             const proximoClass = carteira.proximoProfessor ? 'border-l-4 border-amber-500 bg-amber-50' : 'border border-gray-300 bg-white';
             html += `<div class="p-3 mb-2 rounded flex items-center gap-4 ${proximoClass}">
                 <div class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm font-label-mono font-bold">${idx + 1}</div>
-                <div class="flex-1 font-body-md text-gray-900">${nomes}</div>
+                <div class="flex-1 font-body-md text-gray-900">${nomes} ${hasPCD ? '<span class="text-red-500 text-xs font-bold ml-2">[+ Auxiliar]</span>' : ''}</div>
                 ${carteira.proximoProfessor ? '<div class="text-xs font-label-mono text-amber-700 uppercase tracking-widest font-bold">Frente</div>' : ''}
             </div>`;
         });
@@ -585,23 +655,21 @@ function mudarAba(abaNome, event) {
 }
 
 function imprimirResultado() { window.print(); }
-
 function voltarFormulario() {
     document.getElementById('resultSection').classList.add('hidden');
     document.getElementById('resultSection').style.display = 'none';
     document.getElementById('formSection').style.display = 'flex';
 }
-
 function limparFormulario() {
-    ['disciplina', 'alunos', 'alunosEspeciais', 'alunosIncompativeis', 'alunosInseparaveis'].forEach(id => document.getElementById(id).value = '');
+    turmasCadastradas = [];
+    renderizarTurmas();
+    ['disciplina', 'alunosFrente', 'alunosIncompativeis', 'alunosInseparaveis', 'alunosPCD'].forEach(id => document.getElementById(id).value = '');
     limparErro();
 }
-
 function mostrarErro(m) {
     const e = document.getElementById('errorMessage');
     e.textContent = m; e.classList.remove('hidden');
 }
-
 function limparErro() { document.getElementById('errorMessage').classList.add('hidden'); }
 
 function exportarJSON() {
@@ -610,25 +678,4 @@ function exportarJSON() {
     a.href = URL.createObjectURL(new Blob([JSON.stringify(estadoAtual.resultado, null, 2)], { type: 'application/json' }));
     a.download = `mapeamento-${estadoAtual.disciplina}-${new Date().getTime()}.json`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-function processarCSV(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const linhas = e.target.result.split('\n');
-        const delimitador = e.target.result.includes(';') ? ';' : ',';
-        let res = '';
-        for (let i = (linhas[0].toLowerCase().includes('nome') ? 1 : 0); i < linhas.length; i++) {
-            if (!linhas[i].trim()) continue;
-            const col = linhas[i].split(delimitador);
-            const nome = col[0] ? col[0].trim().replace(/["']/g, '') : '';
-            const turma = col[1] ? col[1].trim().replace(/["']/g, '') : '';
-            if (nome) res += turma ? `${nome} - ${turma}\n` : `${nome}\n`;
-        }
-        document.getElementById('alunos').value = res.trim();
-        document.getElementById('csvInput').value = ''; 
-    };
-    reader.readAsText(file, 'ISO-8859-1');
 }
