@@ -1,7 +1,7 @@
 let estadoAtual = {
-    disciplina: '', alunos: [], numSalas: 2, numFileiras: 5, numCarteiras: 6,
+    disciplina: '', numSalas: 2, numFileiras: 5, numCarteiras: 6,
     agrupamento: 'solo', tamanhoGrupo: 3, regraTurma: 'nenhuma',
-    especiais: [], incompativeis: [], pcd: [], inseparaveis: [], // inseparaveis = array of arrays
+    especiais: [], incompativeis: [], pcd: [], inseparaveis: [],
     resultado: null
 };
 
@@ -11,7 +11,7 @@ let modalContext = '';
 // --- CONTROLE DE FLUXO (ETAPAS 1 e 2) ---
 function travarTurma() {
     const txt = document.getElementById('alunos').value.trim();
-    if (!txt) return mostrarErro('A lista de alunos está vazia.');
+    if (!txt) return mostrarErro('A lista de alunos está vazia. Adicione os nomes.');
     
     alunosCarregados = txt.split('\n').filter(a => a.trim()).map(a => {
         let texto = a.trim();
@@ -47,17 +47,16 @@ function destravarTurma() {
     btnGerar.disabled = true;
     btnGerar.classList.add('opacity-50', 'cursor-not-allowed');
     
-    // Reseta regras se a turma mudar
+    // Reseta regras ao mudar a base da turma
     estadoAtual.especiais = []; estadoAtual.pcd = []; estadoAtual.incompativeis = []; estadoAtual.inseparaveis = [];
     atualizarChipsUI();
 }
 
-// --- SISTEMA DE MODAL ---
+// --- SISTEMA DE MODAL COM EXCLUSÃO MÚTUA ---
 function abrirModal(tipo) {
     modalContext = tipo;
     const modal = document.getElementById('modalOverlay');
     const titulo = document.getElementById('modalTitle');
-    const container = document.getElementById('modalListaAlunos');
     const areaInseparaveis = document.getElementById('modalGruposInseparaveis');
     const footer = document.getElementById('modalFooter');
     
@@ -74,7 +73,7 @@ function abrirModal(tipo) {
         titulo.innerHTML = '<span class="material-symbols-outlined text-primary-container">link</span> Grupos Inseparáveis';
         areaInseparaveis.classList.remove('hidden');
         areaInseparaveis.classList.add('flex');
-        footer.classList.add('hidden'); // Salva ao fechar
+        footer.classList.add('hidden');
         renderizarGruposInseparaveis();
     }
 
@@ -84,14 +83,12 @@ function abrirModal(tipo) {
 
 function fecharModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
-    if(modalContext === 'inseparaveis') atualizarChipsUI(); // Inseparaveis salva on the fly
+    if(modalContext === 'inseparaveis') atualizarChipsUI();
 }
 
 function renderizarCheckboxesModal() {
     const container = document.getElementById('modalListaAlunos');
     const busca = document.getElementById('modalBusca').value.toLowerCase();
-    
-    // Flatten inseparaveis for easy checking
     const flatInseparaveis = estadoAtual.inseparaveis.flat();
 
     let html = '';
@@ -102,22 +99,36 @@ function renderizarCheckboxesModal() {
         let isDisabled = false;
         let reason = '';
 
-        if (modalContext === 'inseparaveis') {
-            isChecked = false; // Checkboxes soltos para formar o grupo
-            if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Já agrupado)'; }
-            else if (estadoAtual.pcd.includes(aluno.id)) { isDisabled = true; reason = '(PCD não agrupa)'; }
-        } else {
-            isChecked = estadoAtual[modalContext].includes(aluno.id);
-            
-            // Regras de Exclusão Mútua (PCD é a autoridade máxima)
-            if (modalContext !== 'pcd' && estadoAtual.pcd.includes(aluno.id)) {
-                isDisabled = true; reason = '(PCD)';
+        // REGRAS DE EXCLUSÃO MÚTUA ESTritas
+        if (modalContext === 'pcd') {
+            isChecked = estadoAtual.pcd.includes(aluno.id);
+            if (!isChecked) {
+                if (estadoAtual.especiais.includes(aluno.id)) { isDisabled = true; reason = '(Frente)'; }
+                else if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Agrupado)'; }
+                else if (estadoAtual.incompativeis.includes(aluno.id)) { isDisabled = true; reason = '(Incompatível)'; }
             }
+        }
+        else if (modalContext === 'especiais') {
+            isChecked = estadoAtual.especiais.includes(aluno.id);
+            if (!isChecked && estadoAtual.pcd.includes(aluno.id)) { isDisabled = true; reason = '(PCD)'; }
+        }
+        else if (modalContext === 'incompativeis') {
+            isChecked = estadoAtual.incompativeis.includes(aluno.id);
+            if (!isChecked) {
+                if (estadoAtual.pcd.includes(aluno.id)) { isDisabled = true; reason = '(PCD)'; }
+                else if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Inseparável)'; }
+            }
+        }
+        else if (modalContext === 'inseparaveis') {
+            isChecked = false; // Livres para formar novos grupos
+            if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Já agrupado)'; }
+            else if (estadoAtual.pcd.includes(aluno.id)) { isDisabled = true; reason = '(PCD)'; }
+            else if (estadoAtual.incompativeis.includes(aluno.id)) { isDisabled = true; reason = '(Incompatível)'; }
         }
 
         html += `
             <label class="flex items-center gap-3 p-2 rounded hover:bg-surface-variant cursor-pointer transition-colors ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}">
-                <input type="checkbox" value="${aluno.id}" class="form-checkbox text-primary-container bg-surface border-outline-variant focus:ring-0 rounded" 
+                <input type="checkbox" value="${aluno.id.replace(/"/g, '&quot;')}" class="form-checkbox text-primary-container bg-surface border-outline-variant focus:ring-0 rounded" 
                     ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
                 <span class="font-label-mono text-sm text-primary flex-1">${aluno.nome}</span>
                 <span class="text-xs text-error font-label-mono">${reason}</span>
@@ -134,7 +145,6 @@ function salvarModal() {
     let selecionados = [];
     checkboxes.forEach(cb => { if (cb.checked && !cb.disabled) selecionados.push(cb.value); });
     
-    // Se não for inseparaveis, apenas salva o array
     if (modalContext !== 'inseparaveis') {
         estadoAtual[modalContext] = selecionados;
     }
@@ -143,7 +153,6 @@ function salvarModal() {
     fecharModal();
 }
 
-// --- LOGICA ESPECIFICA: INSEPARAVEIS ---
 function criarGrupoInseparavel() {
     const checkboxes = document.querySelectorAll('#modalListaAlunos input[type="checkbox"]');
     let selecionados = [];
@@ -176,7 +185,6 @@ function renderizarGruposInseparaveis() {
 
     let html = '';
     estadoAtual.inseparaveis.forEach((grupo, idx) => {
-        // Encontra o nome original para exibição
         const nomes = grupo.map(id => alunosCarregados.find(a => a.id === id)?.nome || id).join(', ');
         html += `
             <div class="flex justify-between items-center bg-surface p-2 rounded border border-outline-variant">
@@ -188,7 +196,6 @@ function renderizarGruposInseparaveis() {
     container.innerHTML = html;
 }
 
-// --- ATUALIZAÇÃO VISUAL (CHIPS NA TELA PRINCIPAL) ---
 function atualizarChipsUI() {
     const render = (tipo, corClass) => {
         const div = document.getElementById(`chips_${tipo}`);
@@ -197,15 +204,14 @@ function atualizarChipsUI() {
         let array = tipo === 'inseparaveis' ? estadoAtual.inseparaveis : estadoAtual[tipo];
         
         if (array.length === 0) {
-            div.innerHTML = '<span class="text-xs text-on-surface-variant italic font-label-mono mt-1">Nenhum</span>';
+            div.innerHTML = '';
             return;
         }
 
         let html = '';
         if (tipo === 'inseparaveis') {
             array.forEach((grupo, idx) => {
-                const count = grupo.length;
-                html += `<span class="border px-2 py-1 rounded text-[10px] font-label-mono ${corClass} flex items-center">Grupo ${idx+1} (${count})</span>`;
+                html += `<span class="border px-2 py-1 rounded text-[10px] font-label-mono ${corClass} flex items-center">Grupo ${idx+1} (${grupo.length})</span>`;
             });
         } else {
             array.forEach(id => {
@@ -222,20 +228,13 @@ function atualizarChipsUI() {
     render('inseparaveis', 'bg-primary-container/20 text-primary-container border-primary-container/50');
 }
 
-
-// --- MOTOR MATEMÁTICO E ALOCAÇÃO ---
+// --- MOTOR MATEMÁTICO ---
 function embaralhar() {
     const erro = validarEntrada();
     if (erro) return mostrarErro(erro);
     
     limparErro();
-    estadoAtual.disciplina = document.getElementById('disciplina').value.trim() || 'Prova';
-    estadoAtual.numSalas = parseInt(document.getElementById('numSalas').value) || 1;
-    estadoAtual.numFileiras = parseInt(document.getElementById('numFileiras').value) || 5;
-    estadoAtual.numCarteiras = parseInt(document.getElementById('numCarteiras').value) || 6;
-    estadoAtual.agrupamento = document.getElementById('agrupamento').value || 'solo';
-    estadoAtual.tamanhoGrupo = parseInt(document.getElementById('tamanhoGrupo').value) || 3;
-    estadoAtual.regraTurma = document.getElementById('regraTurma').value || 'nenhuma';
+    coletarDados();
     
     const resultado = processarEmbaralhamento();
     estadoAtual.resultado = resultado;
@@ -245,6 +244,39 @@ function embaralhar() {
     document.getElementById('formSection').style.display = 'none';
     document.getElementById('resultSection').classList.remove('hidden');
     document.getElementById('resultSection').style.display = 'flex';
+}
+
+function validarEntrada() {
+    const discEl = document.getElementById('disciplina');
+    if (!discEl || !discEl.value.trim()) return '❌ Por favor, preencha a disciplina';
+    if (alunosCarregados.length === 0) return '❌ Turma não configurada. Carregue os alunos primeiro.';
+
+    const numSalas = parseInt(document.getElementById('numSalas')?.value) || 1;
+    const numFileiras = parseInt(document.getElementById('numFileiras')?.value) || 1;
+    const numCarteiras = parseInt(document.getElementById('numCarteiras')?.value) || 1;
+    
+    let multiplicador = 1;
+    const agrupamento = document.getElementById('agrupamento')?.value || 'solo';
+    if (agrupamento === 'dupla') multiplicador = 2;
+    if (agrupamento === 'grupo') multiplicador = parseInt(document.getElementById('tamanhoGrupo')?.value) || 3;
+
+    const capacidadeTotal = numSalas * numFileiras * numCarteiras * multiplicador;
+    
+    if (alunosCarregados.length > capacidadeTotal) {
+        return `❌ Não há espaço! Você tem ${alunosCarregados.length} alunos, mas apenas ${capacidadeTotal} vagas na configuração atual.`;
+    }
+    return null;
+}
+
+function coletarDados() {
+    estadoAtual.disciplina = document.getElementById('disciplina').value.trim();
+    estadoAtual.numSalas = parseInt(document.getElementById('numSalas').value) || 1;
+    estadoAtual.numFileiras = parseInt(document.getElementById('numFileiras').value) || 1;
+    estadoAtual.numCarteiras = parseInt(document.getElementById('numCarteiras').value) || 1;
+    estadoAtual.agrupamento = document.getElementById('agrupamento').value || 'solo';
+    estadoAtual.tamanhoGrupo = parseInt(document.getElementById('tamanhoGrupo').value) || 3;
+    estadoAtual.regraTurma = document.getElementById('regraTurma').value || 'nenhuma';
+    // Observação: Especiais, Incompatíveis, PCD e Inseparáveis já são mantidos ativamente pelo Modal.
 }
 
 function processarEmbaralhamento() {
@@ -272,7 +304,6 @@ function processarEmbaralhamento() {
     let chunks = [];
     let usedIds = new Set();
     
-    // 1. PCDs (Chunks Imutáveis de tamanho 1)
     alunos.forEach(a => {
         if (estadoAtual.pcd.includes(a.id)) {
             chunks.push([a]);
@@ -280,7 +311,6 @@ function processarEmbaralhamento() {
         }
     });
 
-    // 2. Inseparáveis (Chunks fechados)
     if (agrupamento !== 'solo') {
         estadoAtual.inseparaveis.forEach(grupoIds => {
             let chunk = [];
@@ -292,7 +322,6 @@ function processarEmbaralhamento() {
         });
     }
     
-    // 3. O resto
     alunos.forEach(a => { if (!usedIds.has(a.id)) chunks.push([a]); });
 
     const isEspecial = (c) => c.some(a => estadoAtual.especiais.includes(a.id));
@@ -324,30 +353,26 @@ function processarEmbaralhamento() {
     let gruposFrente = Array.from({ length: numGruposFrente }, () => []);
     let gruposGerais = [];
     
-    // Função auxiliar: Mesa está cheia? Se tem PCD, fecha na hora.
     const isDeskFull = (desk) => desk.length >= tamanho || desk.some(a => estadoAtual.pcd.includes(a.id));
 
-    // Preenche linha de frente com Especiais
     let indexFrente = 0;
     while(finalEspeciais.length > 0) {
         let chunk = finalEspeciais.shift();
         let found = false;
         for(let i = 0; i < numGruposFrente; i++) {
             let idx = (indexFrente + i) % numGruposFrente;
-            if (!isDeskFull(gruposFrente[idx]) && (gruposFrente[idx].length + chunk.length <= tamanho) && !chunk.some(a => estadoAtual.pcd.includes(a.id) && gruposFrente[idx].length > 0)) {
+            if (!isDeskFull(gruposFrente[idx]) && (gruposFrente[idx].length + chunk.length <= tamanho) && !isPcd(chunk)) {
                 gruposFrente[idx] = gruposFrente[idx].concat(chunk);
                 indexFrente = idx + 1;
                 found = true; break;
             }
         }
-        if(!found) finalNormais.unshift(chunk); // Se não couber na frente, vai pro bolo geral
+        if(!found) finalNormais.unshift(chunk);
     }
     
-    // Completa os buracos da frente com normais
     for(let i = 0; i < numGruposFrente; i++) {
         while(!isDeskFull(gruposFrente[i]) && finalNormais.length > 0) {
             let chunk = finalNormais[0];
-            // PCD não entra em mesa que já tem gente
             if (isPcd(chunk) && gruposFrente[i].length > 0) break; 
             
             if (gruposFrente[i].length + chunk.length <= tamanho) {
@@ -369,14 +394,13 @@ function processarEmbaralhamento() {
         if (gruposFrente[i].length > 0) gruposGerais.push(gruposFrente[i]);
     }
     
-    // O resto da sala
     let currentDesk = [];
     while(finalNormais.length > 0) {
         let chunk = finalNormais[0];
         
         if (isPcd(chunk)) {
             if (currentDesk.length > 0) gruposGerais.push(currentDesk);
-            gruposGerais.push(finalNormais.shift()); // PCD ganha mesa solo direta
+            gruposGerais.push(finalNormais.shift());
             currentDesk = [];
             continue;
         }
@@ -438,9 +462,9 @@ function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras) {
 function exibirResultados(resultado) {
     const st = document.getElementById('stats');
     st.innerHTML = `
-        <div class="bg-white p-4 rounded border border-gray-200 text-center"><span class="text-gray-500 text-xs font-label-mono block">TOTAL ALUNOS</span><span class="font-headline-lg">${resultado.totalAlunos}</span></div>
-        <div class="bg-white p-4 rounded border border-gray-200 text-center"><span class="text-gray-500 text-xs font-label-mono block">SALAS USADAS</span><span class="font-headline-lg">${resultado.numSalas}</span></div>
-        <div class="bg-white p-4 rounded border border-gray-200 text-center"><span class="text-gray-500 text-xs font-label-mono block">VAGAS TOTAIS</span><span class="font-headline-lg text-blue-600">${resultado.numSalas * resultado.numFileiras * resultado.numCarteiras}</span></div>
+        <div class="bg-white p-4 rounded border border-gray-200 text-center shadow-sm"><span class="text-gray-500 text-xs font-label-mono block">TOTAL ALUNOS</span><span class="font-headline-lg">${resultado.totalAlunos}</span></div>
+        <div class="bg-white p-4 rounded border border-gray-200 text-center shadow-sm"><span class="text-gray-500 text-xs font-label-mono block">SALAS USADAS</span><span class="font-headline-lg">${resultado.numSalas}</span></div>
+        <div class="bg-white p-4 rounded border border-gray-200 text-center shadow-sm"><span class="text-gray-500 text-xs font-label-mono block">VAGAS TOTAIS</span><span class="font-headline-lg text-blue-600">${resultado.numSalas * resultado.numFileiras * resultado.numCarteiras}</span></div>
     `;
     
     desenharMapa(resultado);
@@ -458,7 +482,7 @@ function desenharMapa(resultado) {
 
     resultado.salas.forEach((sala, indSala) => {
         const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded border border-gray-200 shadow-sm flex flex-col items-center gap-4';
+        card.className = 'bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center gap-4';
 
         const canvas = document.createElement('canvas');
         canvas.width = SALA_LARGURA + (MARGEM * 2);
@@ -468,7 +492,7 @@ function desenharMapa(resultado) {
         desenharSala(canvas.getContext('2d'), MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado);
 
         const btn = document.createElement('button');
-        btn.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-blue-50 border border-blue-300 text-blue-700 text-sm';
+        btn.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-blue-50 border border-blue-300 text-blue-700 text-sm hover:bg-blue-100 transition-colors';
         btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">image</span> EXPORTAR SALA ${indSala + 1}`;
         btn.onclick = () => exportarMapaPNG(sala, indSala + 1, resultado);
 
@@ -509,7 +533,7 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
 
             if (cart) {
                 if (cart.temPcd) {
-                    ctx.fillStyle = '#dbeafe'; ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2; // Azul forte para PCD
+                    ctx.fillStyle = '#dbeafe'; ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2;
                 } else if (cart.proximoProfessor) {
                     ctx.fillStyle = '#fef3c7'; ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
                 } else {
@@ -533,7 +557,6 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
     }
 }
 
-// Escala multiplicada por 4 para alta resolução na exportação
 function exportarMapaPNG(sala, numSala, resultado) {
     const SCALE = 4;
     const SALA_LARGURA = 420; const SALA_ALTURA = 350; const MARGEM = 20;
@@ -546,7 +569,7 @@ function exportarMapaPNG(sala, numSala, resultado) {
     ctx.scale(SCALE, SCALE);
     
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    ctx.fillRect(0, 0, tempCanvas.width / SCALE, tempCanvas.height / SCALE);
     
     desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, numSala, resultado);
     
@@ -563,15 +586,15 @@ function gerarListaDetalhada(resultado) {
     resultado.salas.forEach((sala, indSala) => {
         html += `<div class="mb-6"><div class="font-headline-lg-mobile text-black mb-3 border-b pb-2">SALA ${indSala + 1}</div>`;
         sala.forEach((cart, idx) => {
-            const nomes = cart.grupo.map(a => `<strong class="text-black">${a.nome}</strong>`).join(' + ');
+            const nomes = cart.grupo.map(a => `<strong class="text-black">${a.nome}</strong> <span class="text-gray-500 text-xs">(${a.turma})</span>`).join(' + ');
             let style = 'bg-white';
             let tag = '';
-            if(cart.temPcd) { style = 'border-l-4 border-blue-500 bg-blue-50'; tag = '<span class="text-xs text-blue-700 font-bold">PCD/Solo</span>'; }
-            else if(cart.proximoProfessor) { style = 'border-l-4 border-amber-500 bg-amber-50'; tag = '<span class="text-xs text-amber-700 font-bold">Frente</span>'; }
+            if(cart.temPcd) { style = 'border-l-4 border-blue-500 bg-blue-50'; tag = '<span class="text-xs text-blue-700 font-bold tracking-widest">PCD/Solo</span>'; }
+            else if(cart.proximoProfessor) { style = 'border-l-4 border-amber-500 bg-amber-50'; tag = '<span class="text-xs text-amber-700 font-bold tracking-widest">Frente</span>'; }
             
             html += `<div class="p-3 mb-2 rounded border border-gray-300 flex items-center gap-4 ${style}">
                 <div class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm font-bold">${idx + 1}</div>
-                <div class="flex-1 text-sm">${nomes}</div>
+                <div class="flex-1 text-sm font-body-md">${nomes}</div>
                 ${tag}
             </div>`;
         });
@@ -589,19 +612,37 @@ function mudarAba(aba, ev) {
 }
 
 function imprimirResultado() { window.print(); }
+
 function exportarJSON() {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(estadoAtual.resultado, null, 2)], { type: 'application/json' }));
-    a.download = `mapeamento.json`;
+    a.download = `mapeamento-${estadoAtual.disciplina}-${new Date().getTime()}.json`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
+
 function voltarFormulario() {
     document.getElementById('resultSection').classList.add('hidden');
     document.getElementById('resultSection').style.display = 'none';
     document.getElementById('formSection').style.display = 'flex';
 }
-function mostrarErro(m) { document.getElementById('errorMessage').textContent = m; document.getElementById('errorMessage').classList.remove('hidden'); }
-function limparErro() { document.getElementById('errorMessage').classList.add('hidden'); }
+
+function limparFormulario() {
+    document.getElementById('disciplina').value = '';
+    document.getElementById('alunos').value = '';
+    destravarTurma();
+    limparErro();
+}
+
+function mostrarErro(m) { 
+    const e = document.getElementById('errorMessage');
+    e.textContent = m; 
+    e.classList.remove('hidden'); 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function limparErro() { 
+    document.getElementById('errorMessage').classList.add('hidden'); 
+}
 
 function processarCSV(event) {
     const file = event.target.files[0];
