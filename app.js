@@ -7,7 +7,7 @@ let estadoAtual = {
 
 let alunosCarregados = [];
 let modalContext = ''; 
-let selecaoEdicao = null; // Memória para a troca manual de alunos no mapa
+let selecaoEdicao = null; 
 
 // --- CONTROLE DE FLUXO (ETAPAS 1 e 2) ---
 function travarTurma() {
@@ -100,17 +100,17 @@ function renderizarCheckboxesModal() {
         let isDisabled = false;
         let reason = '';
 
+        // REGRAS DE EXCLUSÃO (Frente não possui mais restrições)
         if (modalContext === 'pcd') {
             isChecked = estadoAtual.pcd.includes(aluno.id);
             if (!isChecked) {
-                if (estadoAtual.especiais.includes(aluno.id)) { isDisabled = true; reason = '(Frente)'; }
-                else if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Agrupado)'; }
+                if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Agrupado)'; }
                 else if (estadoAtual.incompativeis.includes(aluno.id)) { isDisabled = true; reason = '(Incompatível)'; }
             }
         }
         else if (modalContext === 'especiais') {
             isChecked = estadoAtual.especiais.includes(aluno.id);
-            if (!isChecked && estadoAtual.pcd.includes(aluno.id)) { isDisabled = true; reason = '(PCD)'; }
+            // Sem disables: Todos podem sentar na frente.
         }
         else if (modalContext === 'incompativeis') {
             isChecked = estadoAtual.incompativeis.includes(aluno.id);
@@ -202,11 +202,7 @@ function atualizarChipsUI() {
         if (!div) return;
         
         let array = tipo === 'inseparaveis' ? estadoAtual.inseparaveis : estadoAtual[tipo];
-        
-        if (array.length === 0) {
-            div.innerHTML = '';
-            return;
-        }
+        if (array.length === 0) { div.innerHTML = ''; return; }
 
         let html = '';
         if (tipo === 'inseparaveis') {
@@ -236,7 +232,7 @@ function embaralhar() {
     limparErro();
     coletarDados();
     
-    selecaoEdicao = null; // Reseta seleção anterior
+    selecaoEdicao = null; 
     const resultado = processarEmbaralhamento();
     estadoAtual.resultado = resultado;
     
@@ -353,7 +349,13 @@ function processarEmbaralhamento() {
     let gruposFrente = Array.from({ length: numGruposFrente }, () => []);
     let gruposGerais = [];
     
-    const isDeskFull = (desk) => desk.length >= tamanho || desk.some(a => estadoAtual.pcd.includes(a.id));
+    const isDeskFull = (desk) => desk.length >= tamanho || isPcd(desk);
+    const canFitChunk = (desk, chnk) => {
+        if (isDeskFull(desk)) return false;
+        if (desk.length + chnk.length > tamanho) return false;
+        if (isPcd(chnk) && desk.length > 0) return false; // PCD precisa de mesa vazia
+        return true;
+    };
 
     let indexFrente = 0;
     while(finalEspeciais.length > 0) {
@@ -361,7 +363,7 @@ function processarEmbaralhamento() {
         let found = false;
         for(let i = 0; i < numGruposFrente; i++) {
             let idx = (indexFrente + i) % numGruposFrente;
-            if (!isDeskFull(gruposFrente[idx]) && (gruposFrente[idx].length + chunk.length <= tamanho) && !isPcd(chunk)) {
+            if (canFitChunk(gruposFrente[idx], chunk)) {
                 gruposFrente[idx] = gruposFrente[idx].concat(chunk);
                 indexFrente = idx + 1;
                 found = true; break;
@@ -375,14 +377,15 @@ function processarEmbaralhamento() {
             let chunk = finalNormais[0];
             if (isPcd(chunk) && gruposFrente[i].length > 0) break; 
             
-            if (gruposFrente[i].length + chunk.length <= tamanho) {
+            if (canFitChunk(gruposFrente[i], chunk)) {
                 gruposFrente[i] = gruposFrente[i].concat(finalNormais.shift());
             } else {
-                let fitIdx = finalNormais.findIndex(c => !isPcd(c) && gruposFrente[i].length + c.length <= tamanho);
+                let fitIdx = finalNormais.findIndex(c => canFitChunk(gruposFrente[i], c));
                 if (fitIdx !== -1) {
                     gruposFrente[i] = gruposFrente[i].concat(finalNormais.splice(fitIdx, 1)[0]);
                 } else {
-                    if(!isPcd(chunk)) {
+                    let isInsep = chunk.some(a => estadoAtual.inseparaveis.flat().includes(a.id));
+                    if(!isPcd(chunk) && !isInsep) {
                         let space = tamanho - gruposFrente[i].length;
                         gruposFrente[i] = gruposFrente[i].concat(finalNormais[0].splice(0, space));
                         if (finalNormais[0].length === 0) finalNormais.shift();
@@ -405,26 +408,36 @@ function processarEmbaralhamento() {
             continue;
         }
 
-        if (currentDesk.length + chunk.length <= tamanho) {
+        if (canFitChunk(currentDesk, chunk)) {
             currentDesk = currentDesk.concat(finalNormais.shift());
-            if (currentDesk.length === tamanho) {
+            if (isDeskFull(currentDesk)) {
                 gruposGerais.push(currentDesk);
                 currentDesk = [];
             }
         } else {
-            let fitIdx = finalNormais.findIndex(c => !isPcd(c) && currentDesk.length + c.length <= tamanho);
+            let fitIdx = finalNormais.findIndex(c => canFitChunk(currentDesk, c));
             if (fitIdx !== -1) {
                 currentDesk = currentDesk.concat(finalNormais.splice(fitIdx, 1)[0]);
-                if (currentDesk.length === tamanho) {
+                if (isDeskFull(currentDesk)) {
                     gruposGerais.push(currentDesk);
                     currentDesk = [];
                 }
             } else {
-                let space = tamanho - currentDesk.length;
-                currentDesk = currentDesk.concat(finalNormais[0].splice(0, space));
-                if (finalNormais[0].length === 0) finalNormais.shift();
-                gruposGerais.push(currentDesk);
-                currentDesk = [];
+                let isInsep = chunk.some(a => estadoAtual.inseparaveis.flat().includes(a.id));
+                if(!isPcd(chunk) && !isInsep) {
+                    let space = tamanho - currentDesk.length;
+                    currentDesk = currentDesk.concat(finalNormais[0].splice(0, space));
+                    if (finalNormais[0].length === 0) finalNormais.shift();
+                } else {
+                    gruposGerais.push(currentDesk);
+                    currentDesk = [];
+                    currentDesk = currentDesk.concat(finalNormais.shift());
+                }
+                
+                if (isDeskFull(currentDesk)) {
+                    gruposGerais.push(currentDesk);
+                    currentDesk = [];
+                }
             }
         }
     }
@@ -463,14 +476,12 @@ function tratarCliqueMesa(salaIndex, fileira, carteira) {
     if (!estadoAtual.resultado) return;
 
     if (!selecaoEdicao) {
-        // Seleciona a mesa de origem (só se tiver alguém lá)
         const cart = estadoAtual.resultado.salas[salaIndex].find(c => c.fileira === fileira && c.carteira === carteira);
         if (!cart) return; 
         
         selecaoEdicao = { salaIndex, fileira, carteira };
-        desenharMapa(estadoAtual.resultado); // Atualiza para mostrar o brilho de seleção
+        desenharMapa(estadoAtual.resultado); 
     } else {
-        // Faz a troca
         const sO = selecaoEdicao.salaIndex;
         const fO = selecaoEdicao.fileira;
         const cO = selecaoEdicao.carteira;
@@ -479,7 +490,6 @@ function tratarCliqueMesa(salaIndex, fileira, carteira) {
         const fD = fileira;
         const cD = carteira;
 
-        // Se clicou na mesma mesa, cancela a seleção
         if (sO === sD && fO === fD && cO === cD) {
             selecaoEdicao = null;
             desenharMapa(estadoAtual.resultado);
@@ -493,20 +503,17 @@ function tratarCliqueMesa(salaIndex, fileira, carteira) {
         let idxD = arrD.findIndex(c => c.fileira === fD && c.carteira === cD);
 
         if (idxO !== -1 && idxD !== -1) {
-            // Troca de grupos
             let tempG = arrO[idxO].grupo;
-            let tempProf = arrO[idxO].proximoProfessor;
-            let tempPcd = arrO[idxO].temPcd;
-
             arrO[idxO].grupo = arrD[idxD].grupo;
-            arrO[idxO].proximoProfessor = arrD[idxD].proximoProfessor;
-            arrO[idxO].temPcd = arrD[idxD].temPcd;
-
             arrD[idxD].grupo = tempG;
-            arrD[idxD].proximoProfessor = tempProf;
-            arrD[idxD].temPcd = tempPcd;
+
+            // Recalcula tags baseado no novo grupo da mesa
+            arrO[idxO].proximoProfessor = arrO[idxO].grupo.some(g => estadoAtual.especiais.includes(g.id));
+            arrO[idxO].temPcd = arrO[idxO].grupo.some(g => estadoAtual.pcd.includes(g.id));
+            arrD[idxD].proximoProfessor = arrD[idxD].grupo.some(g => estadoAtual.especiais.includes(g.id));
+            arrD[idxD].temPcd = arrD[idxD].grupo.some(g => estadoAtual.pcd.includes(g.id));
+            
         } else if (idxO !== -1 && idxD === -1) {
-            // Move para mesa vazia
             let movido = arrO.splice(idxO, 1)[0];
             movido.fileira = fD;
             movido.carteira = cD;
@@ -551,7 +558,6 @@ function desenharMapa(resultado) {
         canvas.height = SALA_ALTURA + (MARGEM * 2);
         canvas.className = 'rounded border border-gray-100 hover:shadow-md transition-shadow';
         
-        // Listener de Cliques Mágicos
         canvas.addEventListener('click', function(e) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -636,28 +642,38 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
                 
                 ctx.fillStyle = '#111827'; ctx.font = 'bold 10px Courier Prime, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 const step = 12;
-                let sY = py + deskH / 2 - ((cart.grupo.length - 1) * step) / 2;
+                const totalLines = cart.grupo.length + (cart.temPcd ? 1 : 0);
+                let sY = py + deskH / 2 - ((totalLines - 1) * step) / 2;
+                
                 cart.grupo.forEach(a => {
                     const p = a.nome.split(' ');
-                    ctx.fillText(p[0] + (p.length > 1 ? ' ' + p[p.length-1].charAt(0) + '.' : ''), px + deskW / 2, sY);
+                    let nomeCurto = p[0] + (p.length > 1 ? ' ' + p[p.length-1].charAt(0) + '.' : '');
+                    ctx.fillText(nomeCurto, px + deskW / 2, sY);
                     sY += step;
+                    
+                    // Adiciona a TAG [+ Auxiliar] logo abaixo do nome do aluno caso ele seja PCD
+                    if (estadoAtual.pcd.includes(a.id)) {
+                        ctx.fillStyle = '#2563eb';
+                        ctx.fillText('[+ Auxiliar]', px + deskW / 2, sY);
+                        ctx.fillStyle = '#111827';
+                        sY += step;
+                    }
                 });
             } else {
                 ctx.fillStyle = '#f9fafb'; ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 1;
                 ctx.fill(); ctx.stroke();
             }
 
-            // FEEDBACK VISUAL DE SELEÇÃO
             if (selecaoEdicao && selecaoEdicao.salaIndex === salaIndex && selecaoEdicao.fileira === c && selecaoEdicao.carteira === l) {
                 ctx.beginPath();
                 if (ctx.roundRect) ctx.roundRect(px - 2, py - 2, deskW + 4, deskH + 4, 6);
                 else ctx.rect(px - 2, py - 2, deskW + 4, deskH + 4);
                 
-                ctx.strokeStyle = '#f59e0b'; // Laranja alerta
+                ctx.strokeStyle = '#f59e0b'; 
                 ctx.lineWidth = 3;
                 ctx.setLineDash([5, 5]);
                 ctx.stroke();
-                ctx.setLineDash([]); // Reseta o tracejado para não bugar outras mesas
+                ctx.setLineDash([]); 
             }
         }
     }
@@ -665,7 +681,7 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
 
 function exportarMapaPNG(sala, numSala, resultado, salaIndex) {
     const TEMP_SELECAO = selecaoEdicao;
-    selecaoEdicao = null; // Limpa a seleção antes de exportar para não sair na impressão
+    selecaoEdicao = null; 
 
     const SCALE = 4;
     const SALA_LARGURA = 420; const SALA_ALTURA = 350; const MARGEM = 20;
@@ -689,7 +705,7 @@ function exportarMapaPNG(sala, numSala, resultado, salaIndex) {
     a.click();
     document.body.removeChild(a);
 
-    selecaoEdicao = TEMP_SELECAO; // Restaura a seleção
+    selecaoEdicao = TEMP_SELECAO; 
 }
 
 function gerarListaDetalhada(resultado) {
@@ -697,7 +713,11 @@ function gerarListaDetalhada(resultado) {
     resultado.salas.forEach((sala, indSala) => {
         html += `<div class="mb-6"><div class="font-headline-lg-mobile text-black mb-3 border-b pb-2">SALA ${indSala + 1}</div>`;
         sala.forEach((cart, idx) => {
-            const nomes = cart.grupo.map(a => `<strong class="text-black">${a.nome}</strong> <span class="text-gray-500 text-xs">(${a.turma})</span>`).join(' + ');
+            const nomes = cart.grupo.map(a => {
+                let tagAux = estadoAtual.pcd.includes(a.id) ? ` <span class="text-blue-600 text-[10px] font-bold uppercase tracking-wider">[+ Auxiliar]</span>` : '';
+                return `<strong class="text-black">${a.nome}</strong>${tagAux} <span class="text-gray-500 text-xs">(${a.turma})</span>`;
+            }).join(' + ');
+            
             let style = 'bg-white';
             let tag = '';
             if(cart.temPcd) { style = 'border-l-4 border-blue-500 bg-blue-50'; tag = '<span class="text-xs text-blue-700 font-bold tracking-widest">PCD/Solo</span>'; }
