@@ -10,10 +10,10 @@
     <link rel="stylesheet" href="style.css">
     
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://SEU_DOMINIO.com.br/" />
+    <meta property="og:url" content="https://diogolabs.com.br/" />
     <meta property="og:title" content="Mapeador de Turmas - Diogolabs" />
     <meta property="og:description" content="Terminal logístico de alocação pseudo-aleatória de alunos com isolamento de conflitos." />
-    <meta property="og:image" content="https://SEU_DOMINIO.com.br/capa.png" />
+    <meta property="og:image" content="https://diogolabs.com.br/capa.png" />
 
     <script id="tailwind-config">
         tailwind.config = {
@@ -76,20 +76,82 @@
         ::-webkit-scrollbar-track { background: #0f0e09; }
         ::-webkit-scrollbar-thumb { background: #36352e; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #4a4733; }
+
+        /* --- ANIMAÇÃO GLITCH CYBERPUNK --- */
+        .glitch-hover {
+            position: relative;
+            display: inline-block;
+            transition: color 0.2s ease;
+            text-decoration: none;
+        }
+        .glitch-hover:hover {
+            color: #00eefc;
+            animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+        }
+        .glitch-hover::before,
+        .glitch-hover::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .glitch-hover:hover::before {
+            left: 2px;
+            text-shadow: -2px 0 #ffb4ab;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+            opacity: 1;
+        }
+        .glitch-hover:hover::after {
+            left: -2px;
+            text-shadow: -2px 0 #f4e225;
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+            animation: glitch-anim2 2.5s infinite linear alternate-reverse;
+            opacity: 1;
+        }
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 1px) }
+            40% { transform: translate(-1px, -1px) }
+            60% { transform: translate(2px, 1px) }
+            80% { transform: translate(1px, -1px) }
+            100% { transform: translate(0) }
+        }
+        @keyframes glitch-anim2 {
+            0% { transform: translate(0) }
+            20% { transform: translate(2px, -1px) }
+            40% { transform: translate(1px, 1px) }
+            60% { transform: translate(-2px, -1px) }
+            80% { transform: translate(-1px, 1px) }
+            100% { transform: translate(0) }
+        }
+        @keyframes glitch-skew {
+            0%, 100% { transform: skew(0deg); }
+            20% { transform: skew(-2deg); }
+            40% { transform: skew(2deg); }
+            60% { transform: skew(-1deg); }
+            80% { transform: skew(1deg); }
+        }
     </style>
 </head>
 <body class="font-body-md text-body-md min-h-screen flex flex-col md:flex-row overflow-x-hidden">
 
 <nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
     <div class="px-6 mb-8 mt-4">
-        <div class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter">Diogolabs</div>
+        <!-- O LINK COM EFEITO GLITCH APLICADO -->
+        <a href="https://diogolabs.com.br" target="_blank" class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter glitch-hover" data-text="Diogolabs">Diogolabs</a>
+        
         <div class="flex items-center gap-3 mt-4">
             <div class="w-10 h-10 rounded-lg bg-surface-variant p-1 flex items-center justify-center text-secondary-container">
                 <span class="material-symbols-outlined">memory</span>
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono text-label-mono font-bold">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v4.0 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.1 Stable</div>
             </div>
         </div>
     </div>
@@ -166,7 +228,6 @@
                             <span class="material-symbols-outlined text-[16px]">add_circle</span> ADICIONAR TURMA
                         </button>
                         
-                        <!-- Lista de Cards -->
                         <div id="turmasContainer" class="mt-2 flex flex-wrap gap-2 max-h-32 overflow-y-auto"></div>
                     </div>
                     
