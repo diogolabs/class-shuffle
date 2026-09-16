@@ -89,7 +89,7 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono text-label-mono font-bold">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v3.1 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.0 Stable</div>
             </div>
         </div>
     </div>
@@ -116,13 +116,9 @@
                 <span class="material-symbols-outlined">tune</span> Parâmetros do Sistema
             </h2>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="flex flex-col gap-5">
-                    <div class="form-group flex flex-col gap-2">
-                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider" for="disciplina">Disciplina</label>
-                        <input type="text" id="disciplina" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-body-md neon-input focus:ring-0" placeholder="Ex: Matemática">
-                    </div>
-
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Coluna 1: Geometria e Turmas -->
+                <div class="flex flex-col gap-6">
                     <div class="form-group flex flex-col gap-2">
                         <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Geometria das Salas</label>
                         <div class="grid grid-cols-3 gap-3">
@@ -152,23 +148,33 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-5">
-                    <div class="form-group flex flex-col gap-2">
-                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Lista Principal de Alunos</label>
-                        <div class="flex gap-2 mb-2">
-                            <button type="button" class="btn-secondary px-3 py-1 rounded text-xs font-label-mono flex items-center gap-1" onclick="document.getElementById('csvInput').click()">
-                                <span class="material-symbols-outlined text-[16px]">upload_file</span> IMPORTAR CSV
+                <!-- Coluna 2: Gerenciador e Regras -->
+                <div class="flex flex-col gap-6">
+                    <div class="form-group flex flex-col gap-2 bg-surface-container p-4 rounded-lg border border-outline-variant shadow-inner">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-label-mono text-primary-container uppercase tracking-wider">Gerenciador de Turmas</label>
+                            <button type="button" class="btn-secondary px-3 py-1 rounded text-[10px] font-label-mono flex items-center gap-1" onclick="document.getElementById('csvInput').click()">
+                                <span class="material-symbols-outlined text-[14px]">upload_file</span> LER CSV
                             </button>
                             <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(event)">
                         </div>
-                        <textarea id="alunos" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-24" placeholder="Nome - Turma"></textarea>
+                        
+                        <input type="text" id="nomeTurmaNova" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2 neon-input text-sm" placeholder="Nome da Turma (Ex: Turma 1001)">
+                        <textarea id="alunosTurmaNova" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20 text-sm" placeholder="Nomes dos alunos (um por linha)"></textarea>
+                        
+                        <button type="button" onclick="adicionarTurma()" class="btn-secondary py-2 rounded text-xs font-label-mono w-full flex justify-center items-center gap-1">
+                            <span class="material-symbols-outlined text-[16px]">add_circle</span> ADICIONAR TURMA
+                        </button>
+                        
+                        <!-- Lista de Cards -->
+                        <div id="turmasContainer" class="mt-2 flex flex-wrap gap-2 max-h-32 overflow-y-auto"></div>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-2 gap-3">
                         <div class="form-group flex flex-col gap-2 relative">
-                            <label class="text-[11px] font-label-mono text-on-surface-variant uppercase tracking-wider">Especiais (Frente)</label>
-                            <textarea id="alunosEspeciais" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
-                            <div id="dropEspeciais" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
+                            <label class="text-[11px] font-label-mono text-on-surface-variant uppercase tracking-wider">Alunos da Frente</label>
+                            <textarea id="alunosFrente" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
+                            <div id="dropFrente" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
                         </div>
                         <div class="form-group flex flex-col gap-2 relative">
                             <label class="text-[11px] font-label-mono text-error uppercase tracking-wider">Incompatíveis (Separar)</label>
@@ -180,16 +186,21 @@
                             <textarea id="alunosInseparaveis" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Ex: João, Maria"></textarea>
                             <div id="dropInseparaveis" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
                         </div>
+                        <div class="form-group flex flex-col gap-2 relative">
+                            <label class="text-[11px] font-label-mono text-orange-400 uppercase tracking-wider" title="Ocupam uma mesa inteira sozinhos">Alunos PCD (Auxiliar)</label>
+                            <textarea id="alunosPCD" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
+                            <div id="dropPCD" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-4 flex gap-3">
-                <button type="button" onclick="embaralhar()" class="btn-primary flex-1 py-3 rounded-lg font-bold font-label-mono tracking-widest flex items-center justify-center gap-2 uppercase">
-                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dataset</span> INICIAR MAPEAMENTO
-                </button>
-                <button type="button" onclick="limparFormulario()" class="btn-secondary px-6 rounded-lg font-label-mono flex items-center justify-center">
-                    <span class="material-symbols-outlined">restart_alt</span>
+            <div class="mt-4 flex gap-3 border-t border-outline-variant pt-6">
+                <div class="form-group flex-1 max-w-[250px]">
+                    <input type="text" id="disciplina" class="w-full bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-body-md neon-input focus:ring-0" placeholder="Nome da Disciplina (Ex: Matemática)">
+                </div>
+                <button type="button" onclick="embaralhar()" class="btn-primary flex-1 py-3 rounded-lg font-bold font-label-mono tracking-widest flex items-center justify-center gap-2 uppercase shadow-lg">
+                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dataset</span> GERAR MAPEAMENTO
                 </button>
             </div>
         </div>
@@ -211,7 +222,6 @@
                     </div>
                 </header>
 
-                <!-- CONTROLES DE REVISÃO (EDIT MODE) -->
                 <div id="editControls" class="bg-blue-50 border border-blue-200 p-4 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                     <div class="flex items-center gap-3 text-blue-800">
                         <span class="material-symbols-outlined text-[32px]">touch_app</span>
@@ -224,14 +234,12 @@
                     </button>
                 </div>
                 
-                <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                </div>
+                <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200"></div>
                 
                 <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <div id="listContainer"></div>
                 </div>
 
-                <!-- CONTROLES DE EXPORTAÇÃO (LOCKED MODE) -->
                 <div id="exportControls" class="hidden mt-6 border-t border-gray-200 pt-6">
                     <div class="flex justify-between items-center mb-4">
                         <div class="text-sm font-label-mono text-green-700 flex items-center gap-2 font-bold">
