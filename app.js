@@ -7,6 +7,7 @@ let estadoAtual = {
 
 let alunosCarregados = [];
 let modalContext = ''; 
+let selecaoEdicao = null; // Memória para a troca manual de alunos no mapa
 
 // --- CONTROLE DE FLUXO (ETAPAS 1 e 2) ---
 function travarTurma() {
@@ -47,8 +48,8 @@ function destravarTurma() {
     btnGerar.disabled = true;
     btnGerar.classList.add('opacity-50', 'cursor-not-allowed');
     
-    // Reseta regras ao mudar a base da turma
     estadoAtual.especiais = []; estadoAtual.pcd = []; estadoAtual.incompativeis = []; estadoAtual.inseparaveis = [];
+    selecaoEdicao = null;
     atualizarChipsUI();
 }
 
@@ -99,7 +100,6 @@ function renderizarCheckboxesModal() {
         let isDisabled = false;
         let reason = '';
 
-        // REGRAS DE EXCLUSÃO MÚTUA ESTritas
         if (modalContext === 'pcd') {
             isChecked = estadoAtual.pcd.includes(aluno.id);
             if (!isChecked) {
@@ -120,7 +120,7 @@ function renderizarCheckboxesModal() {
             }
         }
         else if (modalContext === 'inseparaveis') {
-            isChecked = false; // Livres para formar novos grupos
+            isChecked = false;
             if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Já agrupado)'; }
             else if (estadoAtual.pcd.includes(aluno.id)) { isDisabled = true; reason = '(PCD)'; }
             else if (estadoAtual.incompativeis.includes(aluno.id)) { isDisabled = true; reason = '(Incompatível)'; }
@@ -236,6 +236,7 @@ function embaralhar() {
     limparErro();
     coletarDados();
     
+    selecaoEdicao = null; // Reseta seleção anterior
     const resultado = processarEmbaralhamento();
     estadoAtual.resultado = resultado;
     
@@ -276,7 +277,6 @@ function coletarDados() {
     estadoAtual.agrupamento = document.getElementById('agrupamento').value || 'solo';
     estadoAtual.tamanhoGrupo = parseInt(document.getElementById('tamanhoGrupo').value) || 3;
     estadoAtual.regraTurma = document.getElementById('regraTurma').value || 'nenhuma';
-    // Observação: Especiais, Incompatíveis, PCD e Inseparáveis já são mantidos ativamente pelo Modal.
 }
 
 function processarEmbaralhamento() {
@@ -458,6 +458,67 @@ function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras) {
     return salas;
 }
 
+// --- LÓGICA DE EDIÇÃO MANUAL ---
+function tratarCliqueMesa(salaIndex, fileira, carteira) {
+    if (!estadoAtual.resultado) return;
+
+    if (!selecaoEdicao) {
+        // Seleciona a mesa de origem (só se tiver alguém lá)
+        const cart = estadoAtual.resultado.salas[salaIndex].find(c => c.fileira === fileira && c.carteira === carteira);
+        if (!cart) return; 
+        
+        selecaoEdicao = { salaIndex, fileira, carteira };
+        desenharMapa(estadoAtual.resultado); // Atualiza para mostrar o brilho de seleção
+    } else {
+        // Faz a troca
+        const sO = selecaoEdicao.salaIndex;
+        const fO = selecaoEdicao.fileira;
+        const cO = selecaoEdicao.carteira;
+        
+        const sD = salaIndex;
+        const fD = fileira;
+        const cD = carteira;
+
+        // Se clicou na mesma mesa, cancela a seleção
+        if (sO === sD && fO === fD && cO === cD) {
+            selecaoEdicao = null;
+            desenharMapa(estadoAtual.resultado);
+            return;
+        }
+
+        let arrO = estadoAtual.resultado.salas[sO];
+        let arrD = estadoAtual.resultado.salas[sD];
+        
+        let idxO = arrO.findIndex(c => c.fileira === fO && c.carteira === cO);
+        let idxD = arrD.findIndex(c => c.fileira === fD && c.carteira === cD);
+
+        if (idxO !== -1 && idxD !== -1) {
+            // Troca de grupos
+            let tempG = arrO[idxO].grupo;
+            let tempProf = arrO[idxO].proximoProfessor;
+            let tempPcd = arrO[idxO].temPcd;
+
+            arrO[idxO].grupo = arrD[idxD].grupo;
+            arrO[idxO].proximoProfessor = arrD[idxD].proximoProfessor;
+            arrO[idxO].temPcd = arrD[idxD].temPcd;
+
+            arrD[idxD].grupo = tempG;
+            arrD[idxD].proximoProfessor = tempProf;
+            arrD[idxD].temPcd = tempPcd;
+        } else if (idxO !== -1 && idxD === -1) {
+            // Move para mesa vazia
+            let movido = arrO.splice(idxO, 1)[0];
+            movido.fileira = fD;
+            movido.carteira = cD;
+            arrD.push(movido);
+        }
+
+        selecaoEdicao = null;
+        desenharMapa(estadoAtual.resultado);
+        gerarListaDetalhada(estadoAtual.resultado);
+    }
+}
+
 // --- RENDERIZAÇÃO E EXPORTAÇÃO ---
 function exibirResultados(resultado) {
     const st = document.getElementById('stats');
@@ -471,7 +532,7 @@ function exibirResultados(resultado) {
     gerarListaDetalhada(resultado);
     
     const sucEl = document.getElementById('successMessage');
-    sucEl.innerHTML = `<span class="material-symbols-outlined align-middle mr-2">check_circle</span> Mapeamento concluído!`;
+    sucEl.innerHTML = `<span class="material-symbols-outlined align-middle mr-2">check_circle</span> Mapeamento concluído! Clique em um aluno no mapa para trocar de lugar.`;
     sucEl.classList.remove('hidden');
 }
 
@@ -482,19 +543,51 @@ function desenharMapa(resultado) {
 
     resultado.salas.forEach((sala, indSala) => {
         const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center gap-4';
+        card.className = 'bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center gap-4 cursor-pointer';
+        card.title = "Clique em um aluno para selecioná-lo e depois em outra mesa para trocar.";
 
         const canvas = document.createElement('canvas');
         canvas.width = SALA_LARGURA + (MARGEM * 2);
         canvas.height = SALA_ALTURA + (MARGEM * 2);
-        canvas.className = 'rounded border border-gray-100';
+        canvas.className = 'rounded border border-gray-100 hover:shadow-md transition-shadow';
         
-        desenharSala(canvas.getContext('2d'), MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado);
+        // Listener de Cliques Mágicos
+        canvas.addEventListener('click', function(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const cx = (e.clientX - rect.left) * scaleX;
+            const cy = (e.clientY - rect.top) * scaleY;
+
+            const startX = MARGEM + 15;
+            const startY = MARGEM + 80;
+            
+            if (cx < startX || cy < startY || cx > MARGEM + SALA_LARGURA - 15 || cy > MARGEM + SALA_ALTURA - 10) {
+                if (selecaoEdicao) { selecaoEdicao = null; desenharMapa(estadoAtual.resultado); }
+                return;
+            }
+
+            const espX = (SALA_LARGURA - 30) / resultado.numFileiras;
+            const espY = (SALA_ALTURA - 90) / resultado.numCarteiras;
+
+            const coluna = Math.floor((cx - startX) / espX);
+            const linha = Math.floor((cy - startY) / espY);
+
+            if (coluna >= 0 && coluna < resultado.numFileiras && linha >= 0 && linha < resultado.numCarteiras) {
+                tratarCliqueMesa(indSala, coluna, linha);
+            }
+        });
+
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado, indSala);
 
         const btn = document.createElement('button');
         btn.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-blue-50 border border-blue-300 text-blue-700 text-sm hover:bg-blue-100 transition-colors';
         btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">image</span> EXPORTAR SALA ${indSala + 1}`;
-        btn.onclick = () => exportarMapaPNG(sala, indSala + 1, resultado);
+        btn.onclick = (e) => { e.stopPropagation(); exportarMapaPNG(sala, indSala + 1, resultado, indSala); };
 
         card.appendChild(canvas);
         card.appendChild(btn);
@@ -502,7 +595,7 @@ function desenharMapa(resultado) {
     });
 }
 
-function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, resultado) {
+function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, resultado, salaIndex) {
     ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 2;
     ctx.fillRect(x, y, largura, altura); ctx.strokeRect(x, y, largura, altura);
     
@@ -553,11 +646,27 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
                 ctx.fillStyle = '#f9fafb'; ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 1;
                 ctx.fill(); ctx.stroke();
             }
+
+            // FEEDBACK VISUAL DE SELEÇÃO
+            if (selecaoEdicao && selecaoEdicao.salaIndex === salaIndex && selecaoEdicao.fileira === c && selecaoEdicao.carteira === l) {
+                ctx.beginPath();
+                if (ctx.roundRect) ctx.roundRect(px - 2, py - 2, deskW + 4, deskH + 4, 6);
+                else ctx.rect(px - 2, py - 2, deskW + 4, deskH + 4);
+                
+                ctx.strokeStyle = '#f59e0b'; // Laranja alerta
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]); // Reseta o tracejado para não bugar outras mesas
+            }
         }
     }
 }
 
-function exportarMapaPNG(sala, numSala, resultado) {
+function exportarMapaPNG(sala, numSala, resultado, salaIndex) {
+    const TEMP_SELECAO = selecaoEdicao;
+    selecaoEdicao = null; // Limpa a seleção antes de exportar para não sair na impressão
+
     const SCALE = 4;
     const SALA_LARGURA = 420; const SALA_ALTURA = 350; const MARGEM = 20;
     
@@ -571,7 +680,7 @@ function exportarMapaPNG(sala, numSala, resultado) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, tempCanvas.width / SCALE, tempCanvas.height / SCALE);
     
-    desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, numSala, resultado);
+    desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, numSala, resultado, salaIndex);
     
     const a = document.createElement('a');
     a.href = tempCanvas.toDataURL('image/png');
@@ -579,6 +688,8 @@ function exportarMapaPNG(sala, numSala, resultado) {
     document.body.appendChild(a); 
     a.click();
     document.body.removeChild(a);
+
+    selecaoEdicao = TEMP_SELECAO; // Restaura a seleção
 }
 
 function gerarListaDetalhada(resultado) {
