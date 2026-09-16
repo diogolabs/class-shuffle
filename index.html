@@ -12,7 +12,10 @@
     <meta property="og:description" content="Terminal logístico de alocação pseudo-aleatória de alunos com isolamento de conflitos." />
     <meta property="og:image" content="https://diogolabs.dev.br/capa.png" />
 
-    <!-- 1. PRIMEIRO: Configuração das nossas cores e fontes (Cérebro) -->
+    <!-- 1. O CONSTRUTOR: Biblioteca do Tailwind DEVE vir primeiro -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+    <!-- 2. O CÉREBRO: Nossas configurações de cores e fontes entram agora -->
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -56,9 +59,6 @@
             }
         }
     </script>
-
-    <!-- 2. SEGUNDO: O motor do Tailwind (Construtor) -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     
     <!-- Fontes e Ícones do Google -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
@@ -149,7 +149,6 @@
 
 <nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
     <div class="px-6 mb-8 mt-4">
-        <!-- O LINK COM EFEITO GLITCH APLICADO -->
         <a href="https://diogolabs.dev.br" target="_blank" class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter glitch-hover" data-text="Diogolabs">Diogolabs</a>
         
         <div class="flex items-center gap-3 mt-4">
