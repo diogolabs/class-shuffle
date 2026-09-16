@@ -89,7 +89,7 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono text-label-mono font-bold">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v3.0 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v3.1 Stable</div>
             </div>
         </div>
     </div>
@@ -117,7 +117,6 @@
             </h2>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Coluna 1 -->
                 <div class="flex flex-col gap-5">
                     <div class="form-group flex flex-col gap-2">
                         <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider" for="disciplina">Disciplina</label>
@@ -153,7 +152,6 @@
                     </div>
                 </div>
 
-                <!-- Coluna 2 -->
                 <div class="flex flex-col gap-5">
                     <div class="form-group flex flex-col gap-2">
                         <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Lista Principal de Alunos</label>
@@ -179,7 +177,7 @@
                         </div>
                         <div class="form-group flex flex-col gap-2 relative">
                             <label class="text-[11px] font-label-mono text-secondary-container uppercase tracking-wider">Inseparáveis (Juntar)</label>
-                            <textarea id="alunosInseparaveis" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Ex: João, Maria (na mesma linha)"></textarea>
+                            <textarea id="alunosInseparaveis" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Ex: João, Maria"></textarea>
                             <div id="dropInseparaveis" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
                         </div>
                     </div>
@@ -198,7 +196,7 @@
 
         <!-- RESULTS SECTION -->
         <div id="resultSection" class="hidden flex-col gap-6">
-            <div id="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded font-label-mono"></div>
+            <div id="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded font-label-mono hidden"></div>
             
             <div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
 
@@ -212,6 +210,19 @@
                         <button class="tab-button text-gray-600 hover:text-black px-4 py-2 font-label-mono text-sm transition-all rounded-md" onclick="mudarAba('lista', event)">Lista</button>
                     </div>
                 </header>
+
+                <!-- CONTROLES DE REVISÃO (EDIT MODE) -->
+                <div id="editControls" class="bg-blue-50 border border-blue-200 p-4 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+                    <div class="flex items-center gap-3 text-blue-800">
+                        <span class="material-symbols-outlined text-[32px]">touch_app</span>
+                        <div class="text-sm font-body-md">
+                            <b>Fase de Revisão:</b> O mapeamento foi gerado! Caso precise, toque na carteira de um aluno e depois em outra para trocar as posições.
+                        </div>
+                    </div>
+                    <button onclick="travarMapa()" class="w-full md:w-auto py-3 px-6 rounded-lg font-label-mono font-bold flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
+                        <span class="material-symbols-outlined text-[20px]">lock</span> FINALIZAR MAPEAMENTO
+                    </button>
+                </div>
                 
                 <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
                 </div>
@@ -220,16 +231,27 @@
                     <div id="listContainer"></div>
                 </div>
 
-                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
-                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
-                        <span class="material-symbols-outlined">print</span> IMPRIMIR
-                    </button>
-                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
-                        <span class="material-symbols-outlined">data_object</span> JSON
-                    </button>
-                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-gray-900 text-white hover:bg-gray-800 transition-colors" onclick="voltarFormulario()">
-                        <span class="material-symbols-outlined">arrow_back</span> NOVO MAPEAMENTO
-                    </button>
+                <!-- CONTROLES DE EXPORTAÇÃO (LOCKED MODE) -->
+                <div id="exportControls" class="hidden mt-6 border-t border-gray-200 pt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="text-sm font-label-mono text-green-700 flex items-center gap-2 font-bold">
+                            <span class="material-symbols-outlined">check_circle</span> MAPA TRAVADO PARA EXPORTAÇÃO
+                        </div>
+                        <button onclick="destravarMapa()" class="py-1 px-3 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-gray-700 transition-colors text-xs">
+                            <span class="material-symbols-outlined text-[16px]">lock_open</span> EDITAR NOVAMENTE
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
+                            <span class="material-symbols-outlined">print</span> IMPRIMIR RELATÓRIO
+                        </button>
+                        <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
+                            <span class="material-symbols-outlined">data_object</span> EXPORTAR JSON
+                        </button>
+                        <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-gray-900 text-white hover:bg-gray-800 transition-colors" onclick="voltarFormulario()">
+                            <span class="material-symbols-outlined">add_circle</span> NOVO MAPEAMENTO
+                        </button>
+                    </div>
                 </div>
             </section>
         </div>
