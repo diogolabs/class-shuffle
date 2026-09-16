@@ -4,18 +4,11 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Mapeador de Turmas - Diogolabs</title>
-    
-    <!-- Open Graph Tags (Redes Sociais e WhatsApp) -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://diogolabs.dev.br/" />
-    <meta property="og:title" content="Mapeador de Turmas - Diogolabs" />
-    <meta property="og:description" content="Distribuição inteligente de alunos com regras automatizadas de convivência, inclusão e prevenção de conflitos." />
-    <meta property="og:image" content="https://diogolabs.dev.br/capa.png" />
-
-    <!-- 1. O CONSTRUTOR: Biblioteca do Tailwind DEVE vir primeiro -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
-    <!-- 2. O CÉREBRO: Nossas configurações de cores e fontes entram agora -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="style.css">
+    
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -39,42 +32,26 @@
                         "surface-container-high": "#2b2a23",
                         "primary-container": "#f4e225",
                         "secondary": "#d3fbff",
-                        "surface-container-lowest": "#0f0e09",
-                        "glow-yellow": "rgba(244, 226, 37, 0.4)",
-                        "secondary-container": "#00eefc",
-                        "glow-cyan": "rgba(0, 240, 255, 0.4)",
-                        "surface-glass": "rgba(24, 23, 17, 0.7)",
-                        "outline-variant": "#4a4733",
-                        "surface-container": "#212019",
-                        "on-surface": "#e7e2d8"
+                        "surface-container-lowest": "#0f0e09"
                     },
                     "fontFamily": {
                         "body-md": ["Space Grotesk"],
                         "headline-xl": ["Space Grotesk"],
                         "label-mono": ["Courier Prime"],
-                        "headline-lg-mobile": ["Space Grotesk"],
-                        "headline-lg": ["Space Grotesk"]
+                        "headline-lg-mobile": ["Space Grotesk"]
                     }
                 }
             }
         }
     </script>
-    
-    <!-- Fontes e Ícones do Google -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" href="style.css">
-    
     <style>
         body { background-color: #14130e; color: #e7e2d8; }
         .glass-panel {
             background: rgba(24, 23, 17, 0.7);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(74, 71, 51, 0.5);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
-        .neon-input:focus { border-color: #00eefc; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); outline: none; }
         .btn-primary { background-color: #f4e225; color: #1f1c00; transition: all 0.3s ease; }
         .btn-primary:hover { box-shadow: 0 0 15px rgba(244, 226, 37, 0.4); transform: translateY(-2px); }
         .btn-secondary { background: transparent; border: 1px solid #00eefc; color: #00eefc; transition: all 0.3s ease; }
@@ -82,191 +59,156 @@
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0f0e09; }
         ::-webkit-scrollbar-thumb { background: #36352e; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4a4733; }
-
-        /* --- ANIMAÇÃO GLITCH CYBERPUNK --- */
-        .glitch-hover {
-            position: relative;
-            display: inline-block;
-            transition: color 0.2s ease;
-            text-decoration: none;
-        }
-        .glitch-hover:hover {
-            color: #00eefc;
-            animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
-        }
-        .glitch-hover::before,
-        .glitch-hover::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            pointer-events: none;
-        }
-        .glitch-hover:hover::before {
-            left: 2px;
-            text-shadow: -2px 0 #ffb4ab;
-            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-            animation: glitch-anim 2s infinite linear alternate-reverse;
-            opacity: 1;
-        }
-        .glitch-hover:hover::after {
-            left: -2px;
-            text-shadow: -2px 0 #f4e225;
-            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-            animation: glitch-anim2 2.5s infinite linear alternate-reverse;
-            opacity: 1;
-        }
-        @keyframes glitch-anim {
-            0% { transform: translate(0) }
-            20% { transform: translate(-2px, 1px) }
-            40% { transform: translate(-1px, -1px) }
-            60% { transform: translate(2px, 1px) }
-            80% { transform: translate(1px, -1px) }
-            100% { transform: translate(0) }
-        }
-        @keyframes glitch-anim2 {
-            0% { transform: translate(0) }
-            20% { transform: translate(2px, -1px) }
-            40% { transform: translate(1px, 1px) }
-            60% { transform: translate(-2px, -1px) }
-            80% { transform: translate(-1px, 1px) }
-            100% { transform: translate(0) }
-        }
-        @keyframes glitch-skew {
-            0%, 100% { transform: skew(0deg); }
-            20% { transform: skew(-2deg); }
-            40% { transform: skew(2deg); }
-            60% { transform: skew(-1deg); }
-            80% { transform: skew(1deg); }
-        }
+        
+        /* Modal Animation */
+        .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
-<body class="font-body-md text-body-md min-h-screen flex flex-col md:flex-row overflow-x-hidden">
+<body class="font-body-md min-h-screen flex flex-col md:flex-row overflow-x-hidden">
 
 <nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
     <div class="px-6 mb-8 mt-4">
-        <a href="https://diogolabs.dev.br" target="_blank" class="font-headline-lg text-headline-lg font-bold text-primary tracking-tighter glitch-hover" data-text="Diogolabs">Diogolabs</a>
-        
+        <div class="font-headline-lg-mobile font-bold text-primary tracking-tighter">Diogolabs</div>
         <div class="flex items-center gap-3 mt-4">
             <div class="w-10 h-10 rounded-lg bg-surface-variant p-1 flex items-center justify-center text-secondary-container">
                 <span class="material-symbols-outlined">memory</span>
             </div>
             <div>
-                <div class="text-secondary-container font-label-mono text-label-mono font-bold">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v4.1 Stable</div>
+                <div class="text-secondary-container font-label-mono font-bold text-sm">Core Engine</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.0 Stable</div>
             </div>
         </div>
     </div>
     <div class="flex-1 px-4 space-y-2">
-        <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-[0_0_10px_rgba(244,226,37,0.4)] font-label-mono text-label-mono" href="#">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
-            <span>Dashboard</span>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-[0_0_10px_rgba(244,226,37,0.4)] font-label-mono text-sm" href="#">
+            <span class="material-symbols-outlined">grid_view</span> Dashboard
         </a>
     </div>
 </nav>
 
 <main class="flex-1 w-full md:ml-64 pt-8 px-4 md:px-12 pb-24 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high via-background to-surface-container-lowest">
     <div class="max-w-5xl mx-auto">
-        <header class="mb-10 text-center md:text-left">
-            <h1 class="font-headline-xl text-headline-xl text-primary mb-2">Mapeador de Turmas</h1>
-            <p class="text-on-surface-variant font-label-mono text-label-mono max-w-2xl">Distribuição inteligente de alunos com regras automatizadas de convivência, inclusão e prevenção de conflitos.</p>
+        <header class="mb-10">
+            <h1 class="font-headline-xl text-primary mb-2 text-center md:text-left">Mapeador de Turmas</h1>
         </header>
 
-        <div id="errorMessage" class="error-message mb-6 bg-error/20 text-error border-l-4 border-error p-4 rounded font-label-mono hidden"></div>
+        <div id="errorMessage" class="mb-6 bg-error/20 text-error border-l-4 border-error p-4 rounded font-label-mono hidden"></div>
 
         <!-- FORM SECTION -->
         <div id="formSection" class="glass-panel rounded-xl p-6 mb-10 flex flex-col gap-6">
-            <h2 class="font-headline-lg-mobile text-secondary-container border-b border-outline-variant pb-2 flex items-center gap-2">
-                <span class="material-symbols-outlined">tune</span> Parâmetros do Sistema
-            </h2>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Coluna 1: Geometria e Turmas -->
-                <div class="flex flex-col gap-6">
-                    <div class="form-group flex flex-col gap-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Coluna 1: Geometria (Sempre visível) -->
+                <div class="flex flex-col gap-5">
+                    <h2 class="font-headline-lg-mobile text-secondary-container border-b border-outline-variant pb-2 flex items-center gap-2">
+                        <span class="material-symbols-outlined">tune</span> Parâmetros Físicos
+                    </h2>
+                    
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Disciplina / Prova</label>
+                        <input type="text" id="disciplina" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-body-md focus:border-secondary-container focus:outline-none" placeholder="Ex: Matemática">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
                         <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Geometria das Salas</label>
                         <div class="grid grid-cols-3 gap-3">
-                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Salas</label><input type="number" id="numSalas" value="2" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2 neon-input"></div>
-                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Fileiras (Colunas)</label><input type="number" id="numFileiras" value="5" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2 neon-input"></div>
-                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Carteiras (Linhas)</label><input type="number" id="numCarteiras" value="6" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2 neon-input"></div>
+                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Salas</label><input type="number" id="numSalas" value="1" min="1" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2"></div>
+                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Fileiras(X)</label><input type="number" id="numFileiras" value="5" min="1" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2"></div>
+                            <div class="flex flex-col"><label class="text-xs text-outline mb-1">Carteiras(Y)</label><input type="number" id="numCarteiras" value="6" min="1" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2"></div>
                         </div>
                     </div>
 
-                    <div class="form-group flex flex-col gap-2">
-                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Regras & Agrupamento</label>
-                        <select id="regraTurma" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 neon-input mb-2">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Agrupamento</label>
+                        <select id="regraTurma" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 mb-2">
                             <option value="nenhuma">Ignorar turmas (Caos Total)</option>
                             <option value="separar">Misturar turmas (Isolamento)</option>
                             <option value="agrupar">Agrupar por turma (Blocos)</option>
                         </select>
-                        <select id="agrupamento" onchange="document.getElementById('tamanhoGrupoGroup').style.display = this.value === 'grupo' ? 'flex' : 'none';" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 neon-input">
+                        <select id="agrupamento" onchange="document.getElementById('tamanhoGrupoGroup').style.display = this.value === 'grupo' ? 'flex' : 'none';" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3">
                             <option value="solo">Solo (Isolado)</option>
                             <option value="dupla">Dupla (2 por carteira)</option>
                             <option value="grupo">Grupo</option>
                         </select>
                     </div>
 
-                    <div class="form-group flex-col gap-2" id="tamanhoGrupoGroup" style="display: none;">
-                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider" for="tamanhoGrupo">Tamanho do Grupo</label>
-                        <input type="number" id="tamanhoGrupo" value="3" min="2" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 neon-input">
+                    <div class="flex-col gap-2" id="tamanhoGrupoGroup" style="display: none;">
+                        <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Tamanho do Grupo</label>
+                        <input type="number" id="tamanhoGrupo" value="3" min="2" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3">
                     </div>
                 </div>
 
-                <!-- Coluna 2: Gerenciador e Regras -->
-                <div class="flex flex-col gap-6">
-                    <div class="form-group flex flex-col gap-2 bg-surface-container p-4 rounded-lg border border-outline-variant shadow-inner">
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="text-sm font-label-mono text-primary-container uppercase tracking-wider">Gerenciador de Turmas</label>
-                            <button type="button" class="btn-secondary px-3 py-1 rounded text-[10px] font-label-mono flex items-center gap-1" onclick="document.getElementById('csvInput').click()">
-                                <span class="material-symbols-outlined text-[14px]">upload_file</span> LER CSV
-                            </button>
-                            <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(event)">
+                <!-- Coluna 2: Lógica de Duas Etapas -->
+                <div class="flex flex-col gap-5 border-l border-outline-variant pl-0 md:pl-6">
+                    <h2 class="font-headline-lg-mobile text-primary-container border-b border-outline-variant pb-2 flex items-center gap-2">
+                        <span class="material-symbols-outlined">group</span> Gestão de Alunos
+                    </h2>
+
+                    <!-- ETAPA 1: Carregamento -->
+                    <div id="step1_carregar" class="flex flex-col gap-4">
+                        <div class="flex justify-between items-center">
+                            <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Lista Principal</label>
+                            <div class="relative">
+                                <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(event)">
+                                <button type="button" class="text-xs font-label-mono text-secondary-container border border-secondary-container px-2 py-1 rounded hover:bg-secondary-container/10" onclick="document.getElementById('csvInput').click()">+ CSV</button>
+                            </div>
                         </div>
-                        
-                        <input type="text" id="nomeTurmaNova" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-2 neon-input text-sm" placeholder="Nome da Turma (Ex: Turma 1001)">
-                        <textarea id="alunosTurmaNova" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20 text-sm" placeholder="Nomes dos alunos (um por linha)"></textarea>
-                        
-                        <button type="button" onclick="adicionarTurma()" class="btn-secondary py-2 rounded text-xs font-label-mono w-full flex justify-center items-center gap-1">
-                            <span class="material-symbols-outlined text-[16px]">add_circle</span> ADICIONAR TURMA
+                        <textarea id="alunos" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono h-32 w-full focus:outline-none focus:border-primary-container" placeholder="Nome do Aluno - Turma (um por linha)"></textarea>
+                        <button type="button" onclick="travarTurma()" class="bg-surface-bright border border-outline text-primary py-2 rounded font-label-mono hover:bg-outline-variant transition-colors flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">lock</span> CONFIRMAR LISTA
                         </button>
-                        
-                        <div id="turmasContainer" class="mt-2 flex flex-wrap gap-2 max-h-32 overflow-y-auto"></div>
                     </div>
-                    
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="form-group flex flex-col gap-2 relative">
-                            <label class="text-[11px] font-label-mono text-on-surface-variant uppercase tracking-wider">Alunos da Frente</label>
-                            <textarea id="alunosFrente" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
-                            <div id="dropFrente" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
+
+                    <!-- ETAPA 2: Regras e Tags (Inicia Escondido) -->
+                    <div id="step2_regras" class="hidden flex-col gap-4">
+                        <div class="flex items-center justify-between bg-surface-container-highest p-3 rounded border border-outline-variant">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-green-400">check_circle</span>
+                                <div>
+                                    <div class="text-sm font-bold text-primary" id="lblTurmaTravada">Turma (0)</div>
+                                    <div class="text-xs font-label-mono text-on-surface-variant">Lista travada</div>
+                                </div>
+                            </div>
+                            <button type="button" onclick="destravarTurma()" class="text-error hover:underline text-xs font-label-mono">EDITAR</button>
                         </div>
-                        <div class="form-group flex flex-col gap-2 relative">
-                            <label class="text-[11px] font-label-mono text-error uppercase tracking-wider">Incompatíveis (Separar)</label>
-                            <textarea id="alunosIncompativeis" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
-                            <div id="dropIncomp" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
-                        </div>
-                        <div class="form-group flex flex-col gap-2 relative">
-                            <label class="text-[11px] font-label-mono text-secondary-container uppercase tracking-wider">Inseparáveis (Juntar)</label>
-                            <textarea id="alunosInseparaveis" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Ex: João, Maria"></textarea>
-                            <div id="dropInseparaveis" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
-                        </div>
-                        <div class="form-group flex flex-col gap-2 relative">
-                            <label class="text-[11px] font-label-mono text-orange-400 uppercase tracking-wider" title="Ocupam uma mesa inteira sozinhos">Alunos PCD (Auxiliar)</label>
-                            <textarea id="alunosPCD" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono neon-input h-20" placeholder="Um por linha"></textarea>
-                            <div id="dropPCD" class="absolute top-full left-0 w-full mt-1 bg-gray-100 text-gray-900 text-sm rounded shadow-xl z-50 hidden max-h-32 overflow-y-auto border border-gray-300"></div>
+
+                        <!-- Botões de Regra -->
+                        <div class="grid grid-cols-2 gap-3 mt-2">
+                            <div class="flex flex-col gap-2">
+                                <button type="button" onclick="abrirModal('especiais')" class="bg-surface-container border border-outline-variant text-primary text-xs font-label-mono py-2 rounded hover:border-secondary-container transition-colors flex items-center justify-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">visibility</span> FRENTE
+                                </button>
+                                <div id="chips_especiais" class="flex flex-wrap gap-1 min-h-[24px]"></div>
+                            </div>
+                            
+                            <div class="flex flex-col gap-2">
+                                <button type="button" onclick="abrirModal('pcd')" class="bg-surface-container border border-outline-variant text-primary text-xs font-label-mono py-2 rounded hover:border-blue-400 transition-colors flex items-center justify-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">accessible</span> PCD
+                                </button>
+                                <div id="chips_pcd" class="flex flex-wrap gap-1 min-h-[24px]"></div>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <button type="button" onclick="abrirModal('incompativeis')" class="bg-surface-container border border-outline-variant text-primary text-xs font-label-mono py-2 rounded hover:border-error transition-colors flex items-center justify-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">front_hand</span> SEPARAR
+                                </button>
+                                <div id="chips_incompativeis" class="flex flex-wrap gap-1 min-h-[24px]"></div>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <button type="button" onclick="abrirModal('inseparaveis')" class="bg-surface-container border border-outline-variant text-primary text-xs font-label-mono py-2 rounded hover:border-primary-container transition-colors flex items-center justify-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">link</span> JUNTAR
+                                </button>
+                                <div id="chips_inseparaveis" class="flex flex-wrap gap-1 min-h-[24px]"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-4 flex gap-3 border-t border-outline-variant pt-6">
-                <div class="form-group flex-1 max-w-[250px]">
-                    <input type="text" id="disciplina" class="w-full bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-body-md neon-input focus:ring-0" placeholder="Nome da Disciplina (Ex: Matemática)">
-                </div>
-                <button type="button" onclick="embaralhar()" class="btn-primary flex-1 py-3 rounded-lg font-bold font-label-mono tracking-widest flex items-center justify-center gap-2 uppercase shadow-lg">
+            <div class="mt-6 flex gap-3 border-t border-outline-variant pt-6">
+                <button type="button" id="btnGerar" onclick="embaralhar()" class="btn-primary flex-1 py-3 rounded-lg font-bold font-label-mono flex items-center justify-center gap-2 uppercase opacity-50 cursor-not-allowed" disabled>
                     <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dataset</span> GERAR MAPEAMENTO
                 </button>
             </div>
@@ -274,8 +216,7 @@
 
         <!-- RESULTS SECTION -->
         <div id="resultSection" class="hidden flex-col gap-6">
-            <div id="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded font-label-mono hidden"></div>
-            
+            <div id="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded font-label-mono"></div>
             <div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
 
             <section class="bg-white rounded-xl p-6 shadow-xl text-gray-800">
@@ -288,51 +229,56 @@
                         <button class="tab-button text-gray-600 hover:text-black px-4 py-2 font-label-mono text-sm transition-all rounded-md" onclick="mudarAba('lista', event)">Lista</button>
                     </div>
                 </header>
-
-                <div id="editControls" class="bg-blue-50 border border-blue-200 p-4 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                    <div class="flex items-center gap-3 text-blue-800">
-                        <span class="material-symbols-outlined text-[32px]">touch_app</span>
-                        <div class="text-sm font-body-md">
-                            <b>Fase de Revisão:</b> O mapeamento foi gerado! Caso precise, toque na carteira de um aluno e depois em outra para trocar as posições.
-                        </div>
-                    </div>
-                    <button onclick="travarMapa()" class="w-full md:w-auto py-3 px-6 rounded-lg font-label-mono font-bold flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md">
-                        <span class="material-symbols-outlined text-[20px]">lock</span> FINALIZAR MAPEAMENTO
-                    </button>
-                </div>
                 
                 <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200"></div>
-                
-                <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div id="listContainer"></div>
-                </div>
+                <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200"><div id="listContainer"></div></div>
 
-                <div id="exportControls" class="hidden mt-6 border-t border-gray-200 pt-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="text-sm font-label-mono text-green-700 flex items-center gap-2 font-bold">
-                            <span class="material-symbols-outlined">check_circle</span> MAPA TRAVADO PARA EXPORTAÇÃO
-                        </div>
-                        <button onclick="destravarMapa()" class="py-1 px-3 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-gray-700 transition-colors text-xs">
-                            <span class="material-symbols-outlined text-[16px]">lock_open</span> EDITAR NOVAMENTE
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
-                            <span class="material-symbols-outlined">print</span> IMPRIMIR RELATÓRIO
-                        </button>
-                        <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
-                            <span class="material-symbols-outlined">data_object</span> EXPORTAR JSON
-                        </button>
-                        <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-gray-900 text-white hover:bg-gray-800 transition-colors" onclick="voltarFormulario()">
-                            <span class="material-symbols-outlined">add_circle</span> NOVO MAPEAMENTO
-                        </button>
-                    </div>
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
+                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
+                        <span class="material-symbols-outlined">print</span> IMPRIMIR
+                    </button>
+                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
+                        <span class="material-symbols-outlined">data_object</span> JSON
+                    </button>
+                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-gray-900 text-white hover:bg-gray-800 transition-colors" onclick="voltarFormulario()">
+                        <span class="material-symbols-outlined">arrow_back</span> NOVO MAPEAMENTO
+                    </button>
                 </div>
             </section>
         </div>
-
     </div>
 </main>
+
+<!-- MODAL GENÉRICO -->
+<div id="modalOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center px-4">
+    <div class="bg-surface-container rounded-xl border border-outline-variant w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl modal-enter">
+        <div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-highest rounded-t-xl">
+            <h3 id="modalTitle" class="font-headline-lg-mobile text-primary flex items-center gap-2">Título</h3>
+            <button onclick="fecharModal()" class="text-on-surface-variant hover:text-error"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        
+        <!-- Área exclusiva para os grupos inseparáveis -->
+        <div id="modalGruposInseparaveis" class="hidden p-4 border-b border-outline-variant bg-surface-dim flex-col gap-2">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-label-mono text-on-surface-variant">Grupos Formados:</span>
+                <button onclick="criarGrupoInseparavel()" class="text-xs font-label-mono bg-primary-container text-on-primary-container px-2 py-1 rounded hover:opacity-80">+ FORMAR GRUPO</button>
+            </div>
+            <div id="listaGruposInseparaveis" class="flex flex-col gap-2 mt-2"></div>
+        </div>
+
+        <div class="p-4 flex-1 overflow-y-auto">
+            <input type="text" id="modalBusca" placeholder="Buscar aluno..." class="w-full bg-surface-dim border border-outline-variant text-primary rounded p-2 text-sm font-label-mono mb-4 focus:outline-none focus:border-secondary-container">
+            <div id="modalListaAlunos" class="flex flex-col gap-1">
+                <!-- Checkboxes injetados via JS -->
+            </div>
+        </div>
+        
+        <div id="modalFooter" class="p-4 border-t border-outline-variant bg-surface-container-highest rounded-b-xl flex justify-end gap-3">
+            <button onclick="fecharModal()" class="px-4 py-2 text-sm font-label-mono text-on-surface-variant hover:text-primary">CANCELAR</button>
+            <button onclick="salvarModal()" class="px-4 py-2 text-sm font-label-mono bg-primary text-on-primary rounded font-bold hover:opacity-90">SALVAR SELEÇÃO</button>
+        </div>
+    </div>
+</div>
 
 <script src="app.js"></script>
 </body>
