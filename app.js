@@ -1,7 +1,8 @@
 let estadoAtual = {
     disciplina: '', alunos: [], numSalas: 2, numFileiras: 5, numCarteiras: 6,
     agrupamento: 'solo', tamanhoGrupo: 3, regraTurma: 'nenhuma',
-    alunosEspeciais: [], incompativeis: [], inseparaveis: [], proximoProfessor: false, mesmaFileira: false, resultado: null
+    alunosEspeciais: [], incompativeis: [], inseparaveis: [], proximoProfessor: false, mesmaFileira: false, 
+    resultado: null, selecao: null, isEditMode: true // Define se estamos revisando ou exportando
 };
 
 // --- SISTEMA DE AUTOCOMPLETAR (CHIPS) ---
@@ -71,6 +72,7 @@ setupAutocomplete('alunosEspeciais', 'dropEspeciais', '\n');
 setupAutocomplete('alunosIncompativeis', 'dropIncomp', '\n');
 setupAutocomplete('alunosInseparaveis', 'dropInseparaveis', ',');
 
+
 // --- MOTOR DE MAPEAMENTO ---
 function embaralhar() {
     const erro = validarEntrada();
@@ -78,6 +80,9 @@ function embaralhar() {
     
     limparErro();
     coletarDados();
+    
+    estadoAtual.selecao = null; 
+    estadoAtual.isEditMode = true; // Sempre inicia no modo revisão
     
     const resultado = processarEmbaralhamento();
     estadoAtual.resultado = resultado;
@@ -91,6 +96,10 @@ function embaralhar() {
     if (resSec) {
         resSec.classList.remove('hidden');
         resSec.style.display = 'flex';
+        
+        // Garante a interface no estado de Revisão
+        document.getElementById('editControls').classList.remove('hidden');
+        document.getElementById('exportControls').classList.add('hidden');
     }
 }
 
@@ -120,8 +129,8 @@ function validarEntrada() {
 
 function coletarDados() {
     estadoAtual.disciplina = document.getElementById('disciplina')?.value.trim() || '';
-    
     const alunosRaw = document.getElementById('alunos')?.value.trim() || '';
+    
     estadoAtual.alunos = alunosRaw.split('\n').filter(a => a.trim()).map(a => {
         let texto = a.trim();
         let nome = texto;
@@ -176,7 +185,6 @@ function processarEmbaralhamento() {
         alunosEmbaralhados = misturados;
     }
 
-    // 1. CHUNKING: Agrupar alunos Inseparáveis
     let chunks = [];
     let usedNames = new Set();
     
@@ -198,14 +206,12 @@ function processarEmbaralhamento() {
         if (!usedNames.has(a.nome)) chunks.push([a]);
     });
 
-    // 2. Classificação: Especiais vs Normais (Se um for especial, o chunk todo vai pra frente)
     const isEspecial = (a) => alunosEspeciais.includes(a.nome.toLowerCase()) || alunosEspeciais.includes(a.original.toLowerCase());
     const isIncompativel = (a) => incompativeis.some(inc => a.nome.toLowerCase().includes(inc) || a.original.toLowerCase().includes(inc));
     
     let chunksEspeciais = chunks.filter(c => c.some(isEspecial));
     let chunksNormais = chunks.filter(c => !c.some(isEspecial));
     
-    // 3. Espaçamento de Incompatíveis
     function mesclarEspacado(listaIncomp, listaResto) {
         if (listaIncomp.length === 0) return listaResto;
         if (listaResto.length === 0) return listaIncomp;
@@ -223,7 +229,6 @@ function processarEmbaralhamento() {
     let finalEspeciais = mesclarEspacado(chunksEspeciais.filter(c => c.some(isIncompativel)), chunksEspeciais.filter(c => !c.some(isIncompativel)));
     let finalNormais = mesclarEspacado(chunksNormais.filter(c => c.some(isIncompativel)), chunksNormais.filter(c => !c.some(isIncompativel)));
 
-    // 4. Preenchimento Dinâmico
     const tamanho = agrupamento === 'solo' ? 1 : (agrupamento === 'dupla' ? 2 : tamanhoGrupo);
     const numGruposFrente = numSalas * numFileiras;
     let gruposFrente = Array.from({ length: numGruposFrente }, () => []);
@@ -339,11 +344,70 @@ function exibirResultados(resultado) {
     
     desenharMapa(resultado);
     gerarListaDetalhada(resultado);
-    
-    const sucEl = document.getElementById('successMessage');
-    sucEl.innerHTML = `<span class="material-symbols-outlined align-middle mr-2">check_circle</span> Mapeamento concluído! ${resultado.data}`;
-    sucEl.classList.remove('hidden');
 }
+
+
+// --- LÓGICA DOS ESTADOS (TRAVA E DESTRAVA) ---
+function travarMapa() {
+    estadoAtual.isEditMode = false;
+    estadoAtual.selecao = null;
+    
+    document.getElementById('editControls').classList.add('hidden');
+    document.getElementById('exportControls').classList.remove('hidden');
+    
+    desenharMapa(estadoAtual.resultado);
+}
+
+function destravarMapa() {
+    estadoAtual.isEditMode = true;
+    
+    document.getElementById('editControls').classList.remove('hidden');
+    document.getElementById('exportControls').classList.add('hidden');
+    
+    desenharMapa(estadoAtual.resultado);
+}
+
+
+// --- LÓGICA DE EDIÇÃO: TROCA DE ALUNOS ---
+function processarCliqueCarteira(salaIndex, coluna, linha) {
+    if (!estadoAtual.isEditMode) return; // Bloqueia cliques se estiver travado
+
+    if (!estadoAtual.selecao) {
+        estadoAtual.selecao = { salaIndex, fileira: coluna, carteira: linha };
+        desenharMapa(estadoAtual.resultado);
+        return;
+    }
+
+    if (estadoAtual.selecao.salaIndex === salaIndex && estadoAtual.selecao.fileira === coluna && estadoAtual.selecao.carteira === linha) {
+        estadoAtual.selecao = null; 
+        desenharMapa(estadoAtual.resultado);
+        return;
+    }
+
+    const sel = estadoAtual.selecao;
+    let salaA = estadoAtual.resultado.salas[sel.salaIndex];
+    let salaB = estadoAtual.resultado.salas[salaIndex];
+
+    let idxA = salaA.findIndex(c => c.fileira === sel.fileira && c.carteira === sel.carteira);
+    let idxB = salaB.findIndex(c => c.fileira === coluna && c.carteira === linha);
+
+    let objA = idxA !== -1 ? { ...salaA[idxA] } : null;
+    let objB = idxB !== -1 ? { ...salaB[idxB] } : null;
+
+    if (objA) { objA.fileira = coluna; objA.carteira = linha; }
+    if (objB) { objB.fileira = sel.fileira; objB.carteira = sel.carteira; }
+
+    estadoAtual.resultado.salas[sel.salaIndex] = salaA.filter(c => !(c.fileira === sel.fileira && c.carteira === sel.carteira));
+    estadoAtual.resultado.salas[salaIndex] = estadoAtual.resultado.salas[salaIndex].filter(c => !(c.fileira === coluna && c.carteira === linha));
+
+    if (objA) estadoAtual.resultado.salas[salaIndex].push(objA);
+    if (objB) estadoAtual.resultado.salas[sel.salaIndex].push(objB);
+
+    estadoAtual.selecao = null; 
+    desenharMapa(estadoAtual.resultado);
+    gerarListaDetalhada(estadoAtual.resultado);
+}
+
 
 function desenharMapa(resultado) {
     const mapaContainer = document.getElementById('mapa');
@@ -358,7 +422,40 @@ function desenharMapa(resultado) {
         const canvas = document.createElement('canvas');
         canvas.width = SALA_LARGURA + (MARGEM * 2);
         canvas.height = SALA_ALTURA + (MARGEM * 2);
-        canvas.className = 'rounded border border-gray-100';
+        
+        // Estética do canvas muda dependendo do modo
+        if (estadoAtual.isEditMode) {
+            canvas.className = 'rounded border border-gray-200 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all';
+        } else {
+            canvas.className = 'rounded border border-gray-200';
+        }
+        
+        canvas.addEventListener('click', function(e) {
+            if (!estadoAtual.isEditMode) return; // Bloqueia captura de toques
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const clickX = (e.clientX - rect.left) * scaleX;
+            const clickY = (e.clientY - rect.top) * scaleY;
+
+            const espacoX = (SALA_LARGURA - 30) / resultado.numFileiras; 
+            const espacoY = (SALA_ALTURA - 90) / resultado.numCarteiras; 
+            const deskW = Math.min(espacoX * 0.85, 80); 
+            const deskH = Math.min(espacoY * 0.85, 45);
+
+            for (let linha = 0; linha < resultado.numCarteiras; linha++) {
+                for (let coluna = 0; coluna < resultado.numFileiras; coluna++) {
+                    const px = MARGEM + 15 + coluna * espacoX + (espacoX - deskW) / 2;
+                    const py = MARGEM + 80 + linha * espacoY + (espacoY - deskH) / 2;
+                    
+                    if (clickX >= px && clickX <= px + deskW && clickY >= py && clickY <= py + deskH) {
+                        processarCliqueCarteira(indSala, coluna, linha);
+                        return;
+                    }
+                }
+            }
+        });
         
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#ffffff';
@@ -366,21 +463,25 @@ function desenharMapa(resultado) {
 
         desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado);
 
-        const btnExportar = document.createElement('button');
-        btnExportar.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors text-sm';
-        btnExportar.innerHTML = `<span class="material-symbols-outlined text-[18px]">image</span> EXPORTAR SALA ${indSala + 1}`;
-        
-        btnExportar.onclick = () => {
-            const a = document.createElement('a');
-            a.href = canvas.toDataURL('image/png');
-            a.download = `SALA-${indSala + 1}-${estadoAtual.disciplina || 'mapeamento'}.png`;
-            document.body.appendChild(a); 
-            a.click();
-            document.body.removeChild(a);
-        };
-
         roomCard.appendChild(canvas);
-        roomCard.appendChild(btnExportar);
+        
+        // Os botões individuais de PNG só aparecem quando o mapa está travado
+        if (!estadoAtual.isEditMode) {
+            const btnExportar = document.createElement('button');
+            btnExportar.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 transition-colors text-sm font-bold';
+            btnExportar.innerHTML = `<span class="material-symbols-outlined text-[18px]">image</span> EXPORTAR SALA ${indSala + 1}`;
+            
+            btnExportar.onclick = () => {
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL('image/png');
+                a.download = `SALA-${indSala + 1}-${estadoAtual.disciplina || 'mapeamento'}.png`;
+                document.body.appendChild(a); 
+                a.click();
+                document.body.removeChild(a);
+            };
+            roomCard.appendChild(btnExportar);
+        }
+        
         mapaContainer.appendChild(roomCard);
     });
 }
@@ -409,17 +510,35 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
             const px = x + 15 + coluna * espacoX + (espacoX - deskW) / 2;
             const py = y + 80 + linha * espacoY + (espacoY - deskH) / 2;
             const carteiraAtual = carteirasOcupadas.find(c => c.fileira === coluna && c.carteira === linha);
+            
+            const isSelecionada = estadoAtual.isEditMode && estadoAtual.selecao && 
+                                  estadoAtual.selecao.salaIndex === (numSala - 1) && 
+                                  estadoAtual.selecao.fileira === coluna && 
+                                  estadoAtual.selecao.carteira === linha;
 
             ctx.beginPath();
             if (ctx.roundRect) ctx.roundRect(px, py, deskW, deskH, 4);
             else ctx.rect(px, py, deskW, deskH);
 
-            if (carteiraAtual) {
+            if (isSelecionada) {
+                if (ctx.setLineDash) ctx.setLineDash([4, 4]);
+                ctx.fillStyle = '#fef08a'; 
+                ctx.strokeStyle = '#eab308';
+                ctx.lineWidth = 3;
+            } else if (carteiraAtual) {
+                if (ctx.setLineDash) ctx.setLineDash([]);
                 ctx.fillStyle = carteiraAtual.proximoProfessor ? '#fef3c7' : '#e0e7ff'; 
                 ctx.strokeStyle = carteiraAtual.proximoProfessor ? '#f59e0b' : '#3b82f6';
                 ctx.lineWidth = carteiraAtual.proximoProfessor ? 2 : 1;
-                ctx.fill(); ctx.stroke();
-                
+            } else {
+                if (ctx.setLineDash) ctx.setLineDash([]);
+                ctx.fillStyle = '#f9fafb'; ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 1;
+            }
+            
+            ctx.fill(); ctx.stroke();
+            if (ctx.setLineDash) ctx.setLineDash([]); 
+            
+            if (carteiraAtual) {
                 ctx.fillStyle = '#111827'; ctx.font = 'bold 10px Courier Prime, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 const stepY = 12;
                 let startY = py + deskH / 2 - ((carteiraAtual.grupo.length - 1) * stepY) / 2;
@@ -428,9 +547,6 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
                     ctx.fillText(parts[0] + (parts.length > 1 ? ' ' + parts[parts.length-1].charAt(0) + '.' : ''), px + deskW / 2, startY);
                     startY += stepY;
                 });
-            } else {
-                ctx.fillStyle = '#f9fafb'; ctx.strokeStyle = '#d1d5db'; ctx.lineWidth = 1;
-                ctx.fill(); ctx.stroke();
             }
         }
     }
@@ -469,19 +585,23 @@ function mudarAba(abaNome, event) {
 }
 
 function imprimirResultado() { window.print(); }
+
 function voltarFormulario() {
     document.getElementById('resultSection').classList.add('hidden');
     document.getElementById('resultSection').style.display = 'none';
     document.getElementById('formSection').style.display = 'flex';
 }
+
 function limparFormulario() {
     ['disciplina', 'alunos', 'alunosEspeciais', 'alunosIncompativeis', 'alunosInseparaveis'].forEach(id => document.getElementById(id).value = '');
     limparErro();
 }
+
 function mostrarErro(m) {
     const e = document.getElementById('errorMessage');
     e.textContent = m; e.classList.remove('hidden');
 }
+
 function limparErro() { document.getElementById('errorMessage').classList.add('hidden'); }
 
 function exportarJSON() {
