@@ -59,7 +59,6 @@
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0f0e09; }
         ::-webkit-scrollbar-thumb { background: #36352e; border-radius: 4px; }
-        
         .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
@@ -68,19 +67,20 @@
 
 <nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
     <div class="px-6 mb-8 mt-4">
-        <div class="font-headline-lg-mobile font-bold text-primary tracking-tighter">Diogolabs</div>
+        <!-- LINK CORRIGIDO PARA A HOME -->
+        <a href="https://diogolabs.dev.br" class="font-headline-lg-mobile font-bold text-primary tracking-tighter hover:text-primary-container transition-colors inline-block">Diogolabs</a>
         <div class="flex items-center gap-3 mt-4">
             <div class="w-10 h-10 rounded-lg bg-surface-variant p-1 flex items-center justify-center text-secondary-container">
                 <span class="material-symbols-outlined">memory</span>
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono font-bold text-sm">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v4.1 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.2 Stable</div>
             </div>
         </div>
     </div>
     <div class="flex-1 px-4 space-y-2">
-        <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-[0_0_10px_rgba(244,226,37,0.4)] font-label-mono text-sm" href="#">
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-[0_0_10px_rgba(244,226,37,0.4)] font-label-mono text-sm" href="https://diogolabs.dev.br">
             <span class="material-symbols-outlined">grid_view</span> Dashboard
         </a>
     </div>
@@ -106,7 +106,7 @@
                     
                     <div class="flex flex-col gap-2">
                         <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Disciplina / Prova</label>
-                        <input type="text" id="disciplina" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-body-md focus:border-secondary-container focus:outline-none" placeholder="Ex: Matemática">
+                        <input type="text" id="disciplina" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-body-md focus:border-secondary-container focus:outline-none" placeholder="Ex: Maker">
                     </div>
 
                     <div class="flex flex-col gap-2">
@@ -134,7 +134,7 @@
 
                     <div class="flex-col gap-2" id="tamanhoGrupoGroup" style="display: none;">
                         <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Tamanho do Grupo</label>
-                        <input type="number" id="tamanhoGrupo" value="3" min="2" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3">
+                        <input type="number" id="tamanhoGrupo" value="4" min="2" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3">
                     </div>
                 </div>
 
@@ -144,17 +144,31 @@
                         <span class="material-symbols-outlined">group</span> Gestão de Alunos
                     </h2>
 
-                    <!-- ETAPA 1: Carregamento -->
+                    <!-- ETAPA 1: Carregamento por Lotes -->
                     <div id="step1_carregar" class="flex flex-col gap-4">
-                        <div class="flex justify-between items-center">
-                            <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Lista Principal</label>
-                            <div class="relative">
-                                <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(event)">
-                                <button type="button" class="text-xs font-label-mono text-secondary-container border border-secondary-container px-2 py-1 rounded hover:bg-secondary-container/10" onclick="document.getElementById('csvInput').click()">+ CSV</button>
-                            </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Nome da Turma</label>
+                            <input type="text" id="nomeTurmaTemp" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-body-md focus:border-secondary-container focus:outline-none" placeholder="Ex: 901">
                         </div>
-                        <textarea id="alunos" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono h-32 w-full focus:outline-none focus:border-primary-container" placeholder="Nome do Aluno - Turma (um por linha)"></textarea>
-                        <button type="button" onclick="travarTurma()" class="bg-surface-bright border border-outline text-primary py-2 rounded font-label-mono hover:bg-outline-variant transition-colors flex items-center justify-center gap-2">
+                        
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-center">
+                                <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Alunos (Um por linha)</label>
+                                <div class="relative">
+                                    <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(event)">
+                                    <button type="button" class="text-xs font-label-mono text-secondary-container border border-secondary-container px-2 py-1 rounded hover:bg-secondary-container/10" onclick="document.getElementById('csvInput').click()">+ CSV</button>
+                                </div>
+                            </div>
+                            <textarea id="alunosTemp" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono h-28 w-full focus:outline-none focus:border-primary-container" placeholder="Alice Saraiva..."></textarea>
+                        </div>
+                        
+                        <button type="button" onclick="adicionarTurmaAoLote()" class="bg-surface-bright border border-outline-variant text-primary py-2 rounded font-label-mono hover:bg-surface-variant transition-colors flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-[18px]">add_circle</span> ADICIONAR TURMA
+                        </button>
+
+                        <div id="listaTurmasAdicionadas" class="flex flex-wrap gap-2 mt-2 empty:hidden"></div>
+
+                        <button type="button" id="btnConfirmarLote" onclick="travarTurma()" class="hidden bg-surface-variant border border-primary-container text-primary-container py-3 rounded font-bold font-label-mono hover:bg-primary-container hover:text-background transition-colors items-center justify-center gap-2 mt-2">
                             <span class="material-symbols-outlined text-[18px]">lock</span> CONFIRMAR LISTA
                         </button>
                     </div>
@@ -165,8 +179,8 @@
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-green-400">check_circle</span>
                                 <div>
-                                    <div class="text-sm font-bold text-primary" id="lblTurmaTravada">Turma (0)</div>
-                                    <div class="text-xs font-label-mono text-on-surface-variant">Lista travada</div>
+                                    <div class="text-sm font-bold text-primary" id="lblTurmaTravada">Turmas Travadas</div>
+                                    <div class="text-xs font-label-mono text-on-surface-variant" id="lblTurmaSub">0 Alunos</div>
                                 </div>
                             </div>
                             <button type="button" onclick="destravarTurma()" class="text-error hover:underline text-xs font-label-mono">EDITAR</button>
