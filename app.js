@@ -100,7 +100,6 @@ function renderizarCheckboxesModal() {
         let isDisabled = false;
         let reason = '';
 
-        // REGRAS DE EXCLUSÃO (Frente não possui mais restrições)
         if (modalContext === 'pcd') {
             isChecked = estadoAtual.pcd.includes(aluno.id);
             if (!isChecked) {
@@ -110,7 +109,6 @@ function renderizarCheckboxesModal() {
         }
         else if (modalContext === 'especiais') {
             isChecked = estadoAtual.especiais.includes(aluno.id);
-            // Sem disables: Todos podem sentar na frente.
         }
         else if (modalContext === 'incompativeis') {
             isChecked = estadoAtual.incompativeis.includes(aluno.id);
@@ -353,7 +351,7 @@ function processarEmbaralhamento() {
     const canFitChunk = (desk, chnk) => {
         if (isDeskFull(desk)) return false;
         if (desk.length + chnk.length > tamanho) return false;
-        if (isPcd(chnk) && desk.length > 0) return false; // PCD precisa de mesa vazia
+        if (isPcd(chnk) && desk.length > 0) return false; 
         return true;
     };
 
@@ -507,7 +505,6 @@ function tratarCliqueMesa(salaIndex, fileira, carteira) {
             arrO[idxO].grupo = arrD[idxD].grupo;
             arrD[idxD].grupo = tempG;
 
-            // Recalcula tags baseado no novo grupo da mesa
             arrO[idxO].proximoProfessor = arrO[idxO].grupo.some(g => estadoAtual.especiais.includes(g.id));
             arrO[idxO].temPcd = arrO[idxO].grupo.some(g => estadoAtual.pcd.includes(g.id));
             arrD[idxD].proximoProfessor = arrD[idxD].grupo.some(g => estadoAtual.especiais.includes(g.id));
@@ -651,7 +648,6 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
                     ctx.fillText(nomeCurto, px + deskW / 2, sY);
                     sY += step;
                     
-                    // Adiciona a TAG [+ Auxiliar] logo abaixo do nome do aluno caso ele seja PCD
                     if (estadoAtual.pcd.includes(a.id)) {
                         ctx.fillStyle = '#2563eb';
                         ctx.fillText('[+ Auxiliar]', px + deskW / 2, sY);
@@ -745,10 +741,44 @@ function mudarAba(aba, ev) {
 function imprimirResultado() { window.print(); }
 
 function exportarJSON() {
+    if (!estadoAtual.resultado) return;
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(estadoAtual.resultado, null, 2)], { type: 'application/json' }));
     a.download = `mapeamento-${estadoAtual.disciplina}-${new Date().getTime()}.json`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function exportarCSV() {
+    if (!estadoAtual.resultado || !estadoAtual.resultado.salas) return;
+    
+    let csvContent = "Sala;Fileira;Carteira;Aluno;Turma;Condicao\n";
+    
+    estadoAtual.resultado.salas.forEach((sala, indSala) => {
+        sala.forEach(cart => {
+            cart.grupo.forEach(aluno => {
+                let tags = [];
+                if (estadoAtual.pcd.includes(aluno.id)) tags.push("PCD");
+                if (estadoAtual.especiais.includes(aluno.id)) tags.push("Frente");
+                
+                let tagsStr = tags.join(", ");
+                // Formato de saída seguro para Excel (Pt-BR usando ponto-e-vírgula)
+                csvContent += `${indSala + 1};${cart.fileira + 1};${cart.carteira + 1};"${aluno.nome}";"${aluno.turma}";"${tagsStr}"\n`;
+            });
+        });
+    });
+    
+    // Injeta o BOM (Byte Order Mark) para forçar o Excel a reconhecer UTF-8 e não quebrar acentos
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `planilha-${estadoAtual.disciplina || 'mapeamento'}-${new Date().getTime()}.csv`;
+    document.body.appendChild(a); 
+    a.click(); 
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function voltarFormulario() {
