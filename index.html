@@ -60,7 +60,6 @@
         ::-webkit-scrollbar-track { background: #0f0e09; }
         ::-webkit-scrollbar-thumb { background: #36352e; border-radius: 4px; }
         
-        /* Modal Animation */
         .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
@@ -76,7 +75,7 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono font-bold text-sm">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v4.0 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.1 Stable</div>
             </div>
         </div>
     </div>
@@ -160,7 +159,7 @@
                         </button>
                     </div>
 
-                    <!-- ETAPA 2: Regras e Tags (Inicia Escondido) -->
+                    <!-- ETAPA 2: Regras e Tags -->
                     <div id="step2_regras" class="hidden flex-col gap-4">
                         <div class="flex items-center justify-between bg-surface-container-highest p-3 rounded border border-outline-variant">
                             <div class="flex items-center gap-2">
@@ -233,15 +232,18 @@
                 <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200"></div>
                 <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200"><div id="listContainer"></div></div>
 
-                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
-                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
+                <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-gray-200 pt-4">
+                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
                         <span class="material-symbols-outlined">print</span> IMPRIMIR
                     </button>
-                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
+                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarCSV()">
+                        <span class="material-symbols-outlined">table</span> CSV
+                    </button>
+                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
                         <span class="material-symbols-outlined">data_object</span> JSON
                     </button>
-                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-gray-900 text-white hover:bg-gray-800 transition-colors" onclick="voltarFormulario()">
-                        <span class="material-symbols-outlined">arrow_back</span> NOVO MAPEAMENTO
+                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 bg-gray-900 text-white hover:bg-gray-800 transition-colors" onclick="voltarFormulario()">
+                        <span class="material-symbols-outlined">arrow_back</span> NOVO
                     </button>
                 </div>
             </section>
@@ -257,7 +259,6 @@
             <button onclick="fecharModal()" class="text-on-surface-variant hover:text-error"><span class="material-symbols-outlined">close</span></button>
         </div>
         
-        <!-- Área exclusiva para os grupos inseparáveis -->
         <div id="modalGruposInseparaveis" class="hidden p-4 border-b border-outline-variant bg-surface-dim flex-col gap-2">
             <div class="flex justify-between items-center">
                 <span class="text-xs font-label-mono text-on-surface-variant">Grupos Formados:</span>
@@ -268,9 +269,7 @@
 
         <div class="p-4 flex-1 overflow-y-auto">
             <input type="text" id="modalBusca" placeholder="Buscar aluno..." class="w-full bg-surface-dim border border-outline-variant text-primary rounded p-2 text-sm font-label-mono mb-4 focus:outline-none focus:border-secondary-container">
-            <div id="modalListaAlunos" class="flex flex-col gap-1">
-                <!-- Checkboxes injetados via JS -->
-            </div>
+            <div id="modalListaAlunos" class="flex flex-col gap-1"></div>
         </div>
         
         <div id="modalFooter" class="p-4 border-t border-outline-variant bg-surface-container-highest rounded-b-xl flex justify-end gap-3">
