@@ -1,33 +1,80 @@
 let estadoAtual = {
     disciplina: '', numSalas: 2, numFileiras: 5, numCarteiras: 6,
     agrupamento: 'solo', tamanhoGrupo: 3, regraTurma: 'nenhuma',
-    especiais: [], incompativeis: [], pcd: [], inseparaveis: [],
-    resultado: null
+    especiais: [], incompativeis: [], pcd: [], // pcd agora é array de objetos: {id, consomeVaga}
+    inseparaveis: [], resultado: null
 };
 
+let lotesDeTurmas = [];
 let alunosCarregados = [];
 let modalContext = ''; 
 let selecaoEdicao = null; 
 
 // --- CONTROLE DE FLUXO (ETAPAS 1 e 2) ---
-function travarTurma() {
-    const txt = document.getElementById('alunos').value.trim();
-    if (!txt) return mostrarErro('A lista de alunos está vazia. Adicione os nomes.');
+function adicionarTurmaAoLote() {
+    const nomeTurma = document.getElementById('nomeTurmaTemp').value.trim();
+    const txt = document.getElementById('alunosTemp').value.trim();
     
-    alunosCarregados = txt.split('\n').filter(a => a.trim()).map(a => {
-        let texto = a.trim();
-        let nome = texto;
-        let turma = 'Geral';
-        const separador = texto.match(/(\s+-\s*|\s*-\s+|[–—,/;|])/);
-        if (separador) {
-            const partes = texto.split(separador[0]);
-            turma = partes.pop().trim();
-            nome = partes.join(separador[0]).trim();
-        }
-        return { id: nome.toLowerCase(), nome, turma, original: texto };
+    if (!nomeTurma) return mostrarErro('Digite o nome da turma (Ex: 901) antes de adicionar.');
+    if (!txt) return mostrarErro('Cole a lista de alunos da turma antes de adicionar.');
+    
+    const novosAlunos = txt.split('\n').filter(a => a.trim()).map(a => {
+        let nome = a.trim();
+        const separador = nome.match(/(\s+-\s*|\s*-\s+|[–—,/;|])/);
+        if (separador) nome = nome.split(separador[0])[0].trim();
+        
+        return { 
+            id: (nome + '-' + nomeTurma).toLowerCase(), 
+            nome: nome, 
+            turma: nomeTurma, 
+            original: nome 
+        };
     });
+    
+    lotesDeTurmas.push({ nome: nomeTurma, alunos: novosAlunos });
+    
+    document.getElementById('nomeTurmaTemp').value = '';
+    document.getElementById('alunosTemp').value = '';
+    limparErro();
+    renderizarLotesDeTurmas();
+}
 
-    document.getElementById('lblTurmaTravada').textContent = `Turma (${alunosCarregados.length} alunos)`;
+function removerTurmaDoLote(index) {
+    lotesDeTurmas.splice(index, 1);
+    renderizarLotesDeTurmas();
+}
+
+function renderizarLotesDeTurmas() {
+    const container = document.getElementById('listaTurmasAdicionadas');
+    const btnConfirmar = document.getElementById('btnConfirmarLote');
+    
+    container.innerHTML = lotesDeTurmas.map((lote, idx) => `
+        <div class="flex items-center gap-2 bg-surface-variant text-primary px-3 py-1.5 rounded text-sm font-label-mono border border-outline-variant shadow-sm">
+            <span>${lote.nome} (${lote.alunos.length})</span>
+            <button type="button" onclick="removerTurmaDoLote(${idx})" class="text-error hover:text-error/80 flex items-center justify-center outline-none">
+                <span class="material-symbols-outlined text-[16px]">close</span>
+            </button>
+        </div>
+    `).join('');
+    
+    if (lotesDeTurmas.length > 0) {
+        btnConfirmar.classList.remove('hidden');
+        btnConfirmar.classList.add('flex');
+    } else {
+        btnConfirmar.classList.add('hidden');
+        btnConfirmar.classList.remove('flex');
+    }
+}
+
+function travarTurma() {
+    if (lotesDeTurmas.length === 0) return mostrarErro('Adicione pelo menos uma turma antes de confirmar.');
+    
+    alunosCarregados = lotesDeTurmas.flatMap(lote => lote.alunos);
+
+    const nomesTurmas = lotesDeTurmas.map(t => t.nome).join(', ');
+    document.getElementById('lblTurmaTravada').textContent = `Turmas: ${nomesTurmas}`;
+    document.getElementById('lblTurmaSub').textContent = `${alunosCarregados.length} Alunos no total`;
+    
     document.getElementById('step1_carregar').classList.add('hidden');
     document.getElementById('step2_regras').classList.remove('hidden');
     document.getElementById('step2_regras').classList.add('flex');
@@ -53,7 +100,7 @@ function destravarTurma() {
     atualizarChipsUI();
 }
 
-// --- SISTEMA DE MODAL COM EXCLUSÃO MÚTUA ---
+// --- SISTEMA DE MODAL COM EXCLUSÃO MÚTUA E PCD AVANÇADO ---
 function abrirModal(tipo) {
     modalContext = tipo;
     const modal = document.getElementById('modalOverlay');
@@ -67,7 +114,7 @@ function abrirModal(tipo) {
     footer.classList.remove('hidden');
 
     if (tipo === 'especiais') titulo.innerHTML = '<span class="material-symbols-outlined text-secondary-container">visibility</span> Alunos na Frente';
-    if (tipo === 'pcd') titulo.innerHTML = '<span class="material-symbols-outlined text-blue-400">accessible</span> Alunos PCD (Isolados)';
+    if (tipo === 'pcd') titulo.innerHTML = '<span class="material-symbols-outlined text-blue-400">accessible</span> Alunos PCD e Auxiliares';
     if (tipo === 'incompativeis') titulo.innerHTML = '<span class="material-symbols-outlined text-error">front_hand</span> Separar Alunos';
     
     if (tipo === 'inseparaveis') {
@@ -99,38 +146,48 @@ function renderizarCheckboxesModal() {
         let isChecked = false;
         let isDisabled = false;
         let reason = '';
+        
+        const isPcd = estadoAtual.pcd.some(p => p.id === aluno.id);
+        const pcdObj = estadoAtual.pcd.find(p => p.id === aluno.id);
+        const isIncomp = estadoAtual.incompativeis.includes(aluno.id);
+        const isInsep = flatInseparaveis.includes(aluno.id);
 
         if (modalContext === 'pcd') {
-            isChecked = estadoAtual.pcd.includes(aluno.id);
-            if (!isChecked) {
-                if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Agrupado)'; }
-                else if (estadoAtual.incompativeis.includes(aluno.id)) { isDisabled = true; reason = '(Incompatível)'; }
-            }
+            isChecked = isPcd;
+            if (!isChecked && isIncomp) { isDisabled = true; reason = '(Incompatível)'; }
         }
         else if (modalContext === 'especiais') {
             isChecked = estadoAtual.especiais.includes(aluno.id);
         }
         else if (modalContext === 'incompativeis') {
-            isChecked = estadoAtual.incompativeis.includes(aluno.id);
+            isChecked = isIncomp;
             if (!isChecked) {
-                if (estadoAtual.pcd.includes(aluno.id)) { isDisabled = true; reason = '(PCD)'; }
-                else if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Inseparável)'; }
+                if (isPcd) { isDisabled = true; reason = '(PCD)'; }
+                else if (isInsep) { isDisabled = true; reason = '(Inseparável)'; }
             }
         }
         else if (modalContext === 'inseparaveis') {
             isChecked = false;
-            if (flatInseparaveis.includes(aluno.id)) { isDisabled = true; reason = '(Já agrupado)'; }
-            else if (estadoAtual.pcd.includes(aluno.id)) { isDisabled = true; reason = '(PCD)'; }
-            else if (estadoAtual.incompativeis.includes(aluno.id)) { isDisabled = true; reason = '(Incompatível)'; }
+            if (isInsep) { isDisabled = true; reason = '(Já agrupado)'; }
+            else if (isIncomp) { isDisabled = true; reason = '(Incompatível)'; }
         }
 
         html += `
-            <label class="flex items-center gap-3 p-2 rounded hover:bg-surface-variant cursor-pointer transition-colors ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}">
-                <input type="checkbox" value="${aluno.id.replace(/"/g, '&quot;')}" class="form-checkbox text-primary-container bg-surface border-outline-variant focus:ring-0 rounded" 
-                    ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}>
-                <span class="font-label-mono text-sm text-primary flex-1">${aluno.nome}</span>
-                <span class="text-xs text-error font-label-mono">${reason}</span>
-            </label>
+            <div class="flex flex-col gap-1 p-2 rounded hover:bg-surface-variant transition-colors ${isDisabled ? 'opacity-40' : ''}">
+                <label class="flex items-center gap-3 cursor-pointer ${isDisabled ? 'cursor-not-allowed' : ''}">
+                    <input type="checkbox" value="${aluno.id.replace(/"/g, '&quot;')}" class="form-checkbox text-primary-container bg-surface border-outline-variant focus:ring-0 rounded" 
+                        ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}
+                        ${modalContext === 'pcd' ? `onchange="this.closest('div').querySelector('.pcd-vaga-select').classList.toggle('hidden', !this.checked)"` : ''}>
+                    <span class="font-label-mono text-sm text-primary flex-1">${aluno.nome} <span class="text-on-surface-variant text-[10px]">(${aluno.turma})</span></span>
+                    <span class="text-xs text-error font-label-mono">${reason}</span>
+                </label>
+                ${modalContext === 'pcd' ? `
+                    <select class="pcd-vaga-select text-xs p-1 ml-7 rounded border border-outline-variant bg-surface-highest text-primary focus:outline-none ${isChecked ? '' : 'hidden'}">
+                        <option value="false" ${pcdObj && !pcdObj.consomeVaga ? 'selected' : ''}>Auxiliar NÃO ocupa vaga de outro aluno</option>
+                        <option value="true" ${pcdObj && pcdObj.consomeVaga ? 'selected' : ''}>Auxiliar OCUPA vaga no grupo</option>
+                    </select>
+                ` : ''}
+            </div>
         `;
     });
     container.innerHTML = html;
@@ -139,11 +196,24 @@ function renderizarCheckboxesModal() {
 document.getElementById('modalBusca').addEventListener('input', renderizarCheckboxesModal);
 
 function salvarModal() {
-    const checkboxes = document.querySelectorAll('#modalListaAlunos input[type="checkbox"]');
-    let selecionados = [];
-    checkboxes.forEach(cb => { if (cb.checked && !cb.disabled) selecionados.push(cb.value); });
-    
-    if (modalContext !== 'inseparaveis') {
+    if (modalContext === 'pcd') {
+        const containers = document.querySelectorAll('#modalListaAlunos > div');
+        let selecionados = [];
+        containers.forEach(div => {
+            const cb = div.querySelector('input[type="checkbox"]');
+            if (cb.checked && !cb.disabled) {
+                const select = div.querySelector('.pcd-vaga-select');
+                selecionados.push({
+                    id: cb.value,
+                    consomeVaga: select ? select.value === 'true' : false
+                });
+            }
+        });
+        estadoAtual.pcd = selecionados;
+    } else if (modalContext !== 'inseparaveis') {
+        const checkboxes = document.querySelectorAll('#modalListaAlunos input[type="checkbox"]');
+        let selecionados = [];
+        checkboxes.forEach(cb => { if (cb.checked && !cb.disabled) selecionados.push(cb.value); });
         estadoAtual[modalContext] = selecionados;
     }
     
@@ -152,9 +222,10 @@ function salvarModal() {
 }
 
 function criarGrupoInseparavel() {
-    const checkboxes = document.querySelectorAll('#modalListaAlunos input[type="checkbox"]');
+    const containers = document.querySelectorAll('#modalListaAlunos > div');
     let selecionados = [];
-    checkboxes.forEach(cb => { 
+    containers.forEach(div => { 
+        const cb = div.querySelector('input[type="checkbox"]');
         if (cb.checked && !cb.disabled) {
             selecionados.push(cb.value);
             cb.checked = false; 
@@ -206,6 +277,12 @@ function atualizarChipsUI() {
         if (tipo === 'inseparaveis') {
             array.forEach((grupo, idx) => {
                 html += `<span class="border px-2 py-1 rounded text-[10px] font-label-mono ${corClass} flex items-center">Grupo ${idx+1} (${grupo.length})</span>`;
+            });
+        } else if (tipo === 'pcd') {
+            array.forEach(p => {
+                const nomeCurto = (alunosCarregados.find(a => a.id === p.id)?.nome || p.id).split(' ')[0];
+                const tagVaga = p.consomeVaga ? '(Ocupa vaga)' : '(Extra)';
+                html += `<span class="border px-2 py-1 rounded text-[10px] font-label-mono ${corClass} flex items-center">${nomeCurto} ${tagVaga}</span>`;
             });
         } else {
             array.forEach(id => {
@@ -297,13 +374,6 @@ function processarEmbaralhamento() {
 
     let chunks = [];
     let usedIds = new Set();
-    
-    alunos.forEach(a => {
-        if (estadoAtual.pcd.includes(a.id)) {
-            chunks.push([a]);
-            usedIds.add(a.id);
-        }
-    });
 
     if (agrupamento !== 'solo') {
         estadoAtual.inseparaveis.forEach(grupoIds => {
@@ -320,8 +390,34 @@ function processarEmbaralhamento() {
 
     const isEspecial = (c) => c.some(a => estadoAtual.especiais.includes(a.id));
     const isIncompativel = (c) => c.some(a => estadoAtual.incompativeis.includes(a.id));
-    const isPcd = (c) => c.some(a => estadoAtual.pcd.includes(a.id));
+    const isPcd = (c) => c.some(a => estadoAtual.pcd.some(p => p.id === a.id));
     
+    // Calcula o peso de ocupação real da carteira/grupo
+    const countSlots = (desk) => desk.reduce((acc, a) => {
+        const pcdObj = estadoAtual.pcd.find(p => p.id === a.id);
+        return acc + ((pcdObj && pcdObj.consomeVaga) ? 2 : 1);
+    }, 0);
+    
+    const maxCapacity = (desk, chnk) => {
+        let max = agrupamento === 'solo' ? 1 : (agrupamento === 'dupla' ? 2 : tamanhoGrupo);
+        const checkPcdConsomeVaga = (arr) => arr && arr.some(a => {
+            let p = estadoAtual.pcd.find(x => x.id === a.id);
+            return p && p.consomeVaga;
+        });
+        // Se for prova SOLO, e o PCD consome vaga, a mesa DEVE expandir para caber os 2 fisicamente
+        if (agrupamento === 'solo' && (checkPcdConsomeVaga(desk) || checkPcdConsomeVaga(chnk))) return 2;
+        return max;
+    };
+
+    const isDeskFull = (desk) => countSlots(desk) >= maxCapacity(desk, null);
+    
+    const canFitChunk = (desk, chnk) => {
+        if (desk.length === 0 && countSlots(chnk) <= maxCapacity(null, chnk)) return true; 
+        if (isDeskFull(desk)) return false;
+        if (countSlots(desk) + countSlots(chnk) > maxCapacity(desk, chnk)) return false;
+        return true;
+    };
+
     let chunksEspeciais = chunks.filter(c => isEspecial(c));
     let chunksNormais = chunks.filter(c => !isEspecial(c));
     
@@ -342,19 +438,11 @@ function processarEmbaralhamento() {
     let finalEspeciais = mesclarEspacado(chunksEspeciais.filter(isIncompativel), chunksEspeciais.filter(c => !isIncompativel(c)));
     let finalNormais = mesclarEspacado(chunksNormais.filter(isIncompativel), chunksNormais.filter(c => !isIncompativel(c)));
 
-    const tamanho = agrupamento === 'solo' ? 1 : (agrupamento === 'dupla' ? 2 : tamanhoGrupo);
     const numGruposFrente = numSalas * numFileiras;
     let gruposFrente = Array.from({ length: numGruposFrente }, () => []);
     let gruposGerais = [];
-    
-    const isDeskFull = (desk) => desk.length >= tamanho || isPcd(desk);
-    const canFitChunk = (desk, chnk) => {
-        if (isDeskFull(desk)) return false;
-        if (desk.length + chnk.length > tamanho) return false;
-        if (isPcd(chnk) && desk.length > 0) return false; 
-        return true;
-    };
 
+    // Preenche a FRENTE
     let indexFrente = 0;
     while(finalEspeciais.length > 0) {
         let chunk = finalEspeciais.shift();
@@ -373,7 +461,6 @@ function processarEmbaralhamento() {
     for(let i = 0; i < numGruposFrente; i++) {
         while(!isDeskFull(gruposFrente[i]) && finalNormais.length > 0) {
             let chunk = finalNormais[0];
-            if (isPcd(chunk) && gruposFrente[i].length > 0) break; 
             
             if (canFitChunk(gruposFrente[i], chunk)) {
                 gruposFrente[i] = gruposFrente[i].concat(finalNormais.shift());
@@ -383,10 +470,22 @@ function processarEmbaralhamento() {
                     gruposFrente[i] = gruposFrente[i].concat(finalNormais.splice(fitIdx, 1)[0]);
                 } else {
                     let isInsep = chunk.some(a => estadoAtual.inseparaveis.flat().includes(a.id));
-                    if(!isPcd(chunk) && !isInsep) {
-                        let space = tamanho - gruposFrente[i].length;
-                        gruposFrente[i] = gruposFrente[i].concat(finalNormais[0].splice(0, space));
-                        if (finalNormais[0].length === 0) finalNormais.shift();
+                    if(!isInsep) {
+                        let spaceLeft = maxCapacity(gruposFrente[i], null) - countSlots(gruposFrente[i]);
+                        let splitCount = 0;
+                        let currentCost = 0;
+                        for(let st of chunk) {
+                            let pObj = estadoAtual.pcd.find(p=>p.id===st.id);
+                            let cost = (pObj && pObj.consomeVaga) ? 2 : 1;
+                            if (currentCost + cost <= spaceLeft) {
+                                currentCost += cost;
+                                splitCount++;
+                            } else break;
+                        }
+                        if (splitCount > 0) {
+                            gruposFrente[i] = gruposFrente[i].concat(finalNormais[0].splice(0, splitCount));
+                            if (finalNormais[0].length === 0) finalNormais.shift();
+                        }
                     }
                     break;
                 }
@@ -395,16 +494,10 @@ function processarEmbaralhamento() {
         if (gruposFrente[i].length > 0) gruposGerais.push(gruposFrente[i]);
     }
     
+    // Preenche RESTO DAS MESAS
     let currentDesk = [];
     while(finalNormais.length > 0) {
         let chunk = finalNormais[0];
-        
-        if (isPcd(chunk)) {
-            if (currentDesk.length > 0) gruposGerais.push(currentDesk);
-            gruposGerais.push(finalNormais.shift());
-            currentDesk = [];
-            continue;
-        }
 
         if (canFitChunk(currentDesk, chunk)) {
             currentDesk = currentDesk.concat(finalNormais.shift());
@@ -422,10 +515,25 @@ function processarEmbaralhamento() {
                 }
             } else {
                 let isInsep = chunk.some(a => estadoAtual.inseparaveis.flat().includes(a.id));
-                if(!isPcd(chunk) && !isInsep) {
-                    let space = tamanho - currentDesk.length;
-                    currentDesk = currentDesk.concat(finalNormais[0].splice(0, space));
-                    if (finalNormais[0].length === 0) finalNormais.shift();
+                if(!isInsep) {
+                    let spaceLeft = maxCapacity(currentDesk, null) - countSlots(currentDesk);
+                    let splitCount = 0;
+                    let currentCost = 0;
+                    for(let st of chunk) {
+                        let pObj = estadoAtual.pcd.find(p=>p.id===st.id);
+                        let cost = (pObj && pObj.consomeVaga) ? 2 : 1;
+                        if (currentCost + cost <= spaceLeft) {
+                            currentCost += cost;
+                            splitCount++;
+                        } else break;
+                    }
+                    if (splitCount > 0) {
+                        currentDesk = currentDesk.concat(finalNormais[0].splice(0, splitCount));
+                        if (finalNormais[0].length === 0) finalNormais.shift();
+                    } else {
+                        gruposGerais.push(currentDesk);
+                        currentDesk = [];
+                    }
                 } else {
                     gruposGerais.push(currentDesk);
                     currentDesk = [];
@@ -461,7 +569,7 @@ function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras) {
 
         if (carteira < numCarteiras) { 
             const proximoProfessor = grupo.some(g => estadoAtual.especiais.includes(g.id));
-            const temPcd = grupo.some(g => estadoAtual.pcd.includes(g.id));
+            const temPcd = grupo.some(g => estadoAtual.pcd.some(p => p.id === g.id));
             salas[salaAtual].push({ fileira, carteira, grupo, proximoProfessor, temPcd });
             assentosPorSala[salaAtual]++;
         }
@@ -506,9 +614,9 @@ function tratarCliqueMesa(salaIndex, fileira, carteira) {
             arrD[idxD].grupo = tempG;
 
             arrO[idxO].proximoProfessor = arrO[idxO].grupo.some(g => estadoAtual.especiais.includes(g.id));
-            arrO[idxO].temPcd = arrO[idxO].grupo.some(g => estadoAtual.pcd.includes(g.id));
+            arrO[idxO].temPcd = arrO[idxO].grupo.some(g => estadoAtual.pcd.some(p => p.id === g.id));
             arrD[idxD].proximoProfessor = arrD[idxD].grupo.some(g => estadoAtual.especiais.includes(g.id));
-            arrD[idxD].temPcd = arrD[idxD].grupo.some(g => estadoAtual.pcd.includes(g.id));
+            arrD[idxD].temPcd = arrD[idxD].grupo.some(g => estadoAtual.pcd.some(p => p.id === g.id));
             
         } else if (idxO !== -1 && idxD === -1) {
             let movido = arrO.splice(idxO, 1)[0];
@@ -639,7 +747,9 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
                 
                 ctx.fillStyle = '#111827'; ctx.font = 'bold 10px Courier Prime, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 const step = 12;
-                const totalLines = cart.grupo.length + (cart.temPcd ? 1 : 0);
+                
+                const numPcds = cart.grupo.filter(a => estadoAtual.pcd.some(p => p.id === a.id)).length;
+                const totalLines = cart.grupo.length + numPcds;
                 let sY = py + deskH / 2 - ((totalLines - 1) * step) / 2;
                 
                 cart.grupo.forEach(a => {
@@ -648,7 +758,7 @@ function desenharSala(ctx, x, y, largura, altura, carteirasOcupadas, numSala, re
                     ctx.fillText(nomeCurto, px + deskW / 2, sY);
                     sY += step;
                     
-                    if (estadoAtual.pcd.includes(a.id)) {
+                    if (estadoAtual.pcd.some(pObj => pObj.id === a.id)) {
                         ctx.fillStyle = '#2563eb';
                         ctx.fillText('[+ Auxiliar]', px + deskW / 2, sY);
                         ctx.fillStyle = '#111827';
@@ -710,7 +820,7 @@ function gerarListaDetalhada(resultado) {
         html += `<div class="mb-6"><div class="font-headline-lg-mobile text-black mb-3 border-b pb-2">SALA ${indSala + 1}</div>`;
         sala.forEach((cart, idx) => {
             const nomes = cart.grupo.map(a => {
-                let tagAux = estadoAtual.pcd.includes(a.id) ? ` <span class="text-blue-600 text-[10px] font-bold uppercase tracking-wider">[+ Auxiliar]</span>` : '';
+                let tagAux = estadoAtual.pcd.some(p => p.id === a.id) ? ` <span class="text-blue-600 text-[10px] font-bold uppercase tracking-wider">[+ Auxiliar]</span>` : '';
                 return `<strong class="text-black">${a.nome}</strong>${tagAux} <span class="text-gray-500 text-xs">(${a.turma})</span>`;
             }).join(' + ');
             
@@ -750,28 +860,22 @@ function exportarJSON() {
 
 function exportarCSV() {
     if (!estadoAtual.resultado || !estadoAtual.resultado.salas) return;
-    
     let csvContent = "Sala;Fileira;Carteira;Aluno;Turma;Condicao\n";
-    
     estadoAtual.resultado.salas.forEach((sala, indSala) => {
         sala.forEach(cart => {
             cart.grupo.forEach(aluno => {
                 let tags = [];
-                if (estadoAtual.pcd.includes(aluno.id)) tags.push("PCD");
+                if (estadoAtual.pcd.some(p => p.id === aluno.id)) tags.push("PCD");
                 if (estadoAtual.especiais.includes(aluno.id)) tags.push("Frente");
                 
                 let tagsStr = tags.join(", ");
-                // Formato de saída seguro para Excel (Pt-BR usando ponto-e-vírgula)
                 csvContent += `${indSala + 1};${cart.fileira + 1};${cart.carteira + 1};"${aluno.nome}";"${aluno.turma}";"${tagsStr}"\n`;
             });
         });
     });
-    
-    // Injeta o BOM (Byte Order Mark) para forçar o Excel a reconhecer UTF-8 e não quebrar acentos
     const bom = "\uFEFF";
     const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
     const a = document.createElement('a');
     a.href = url;
     a.download = `planilha-${estadoAtual.disciplina || 'mapeamento'}-${new Date().getTime()}.csv`;
@@ -789,7 +893,10 @@ function voltarFormulario() {
 
 function limparFormulario() {
     document.getElementById('disciplina').value = '';
-    document.getElementById('alunos').value = '';
+    document.getElementById('nomeTurmaTemp').value = '';
+    document.getElementById('alunosTemp').value = '';
+    lotesDeTurmas = [];
+    renderizarLotesDeTurmas();
     destravarTurma();
     limparErro();
 }
@@ -816,9 +923,9 @@ function processarCSV(event) {
         for (let i = (linhas[0].toLowerCase().includes('nome') ? 1 : 0); i < linhas.length; i++) {
             if (!linhas[i].trim()) continue;
             const col = linhas[i].split(sep);
-            if (col[0]) res += col[1] ? `${col[0].trim().replace(/["']/g, '')} - ${col[1].trim().replace(/["']/g, '')}\n` : `${col[0].trim().replace(/["']/g, '')}\n`;
+            if (col[0]) res += `${col[0].trim().replace(/["']/g, '')}\n`;
         }
-        document.getElementById('alunos').value = res.trim();
+        document.getElementById('alunosTemp').value = res.trim();
         document.getElementById('csvInput').value = ''; 
     };
     reader.readAsText(file, 'ISO-8859-1');
