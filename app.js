@@ -10,7 +10,44 @@ let alunosCarregados = [];
 let modalContext = ''; 
 let selecaoEdicao = null; 
 
-// --- CONTROLE DE FLUXO (ETAPAS 1 e 2) ---
+// --- TEMA CLARO / ESCURO ---
+function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.classList.contains('dark');
+    
+    if (isDark) {
+        html.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    } else {
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    }
+    atualizarIconesTema(!isDark);
+}
+
+function atualizarIconesTema(isLight) {
+    const icon = document.getElementById('themeIcon');
+    const text = document.getElementById('themeText');
+    const iconMobile = document.getElementById('themeIconMobile');
+    
+    if (isLight) {
+        if(icon) icon.textContent = 'dark_mode';
+        if(text) text.textContent = 'Modo Escuro';
+        if(iconMobile) iconMobile.textContent = 'dark_mode';
+    } else {
+        if(icon) icon.textContent = 'light_mode';
+        if(text) text.textContent = 'Modo Claro';
+        if(iconMobile) iconMobile.textContent = 'light_mode';
+    }
+}
+
+if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.classList.remove('dark');
+    window.addEventListener('DOMContentLoaded', () => atualizarIconesTema(true));
+}
+
+
+// --- CONTROLE DE FLUXO ---
 function adicionarTurmaAoLote() {
     const nomeTurma = document.getElementById('nomeTurmaTemp').value.trim();
     const txt = document.getElementById('alunosTemp').value.trim();
@@ -100,7 +137,7 @@ function destravarTurma() {
     atualizarChipsUI();
 }
 
-// --- SISTEMA DE MODAL COM VALIDAÇÃO (SOFT-LOCK) ---
+// --- MODAIS ---
 function abrirModal(tipo) {
     modalContext = tipo;
     const modal = document.getElementById('modalOverlay');
@@ -153,14 +190,8 @@ function renderizarCheckboxesModal() {
         if (busca && !aluno.nome.toLowerCase().includes(busca)) return;
         
         let isChecked = false;
-        
-        if (modalContext === 'pcd') {
-            isChecked = estadoAtual.pcd.some(p => p.id === aluno.id);
-        } else if (modalContext === 'especiais') {
-            isChecked = estadoAtual.especiais.includes(aluno.id);
-        } else if (modalContext === 'incompativeis' || modalContext === 'inseparaveis') {
-            isChecked = false; // Checkboxes soltos para montar novos grupos
-        }
+        if (modalContext === 'pcd') isChecked = estadoAtual.pcd.some(p => p.id === aluno.id);
+        else if (modalContext === 'especiais') isChecked = estadoAtual.especiais.includes(aluno.id);
 
         const pcdObj = estadoAtual.pcd.find(p => p.id === aluno.id);
 
@@ -173,7 +204,7 @@ function renderizarCheckboxesModal() {
                     <span class="font-label-mono text-sm text-primary flex-1">${aluno.nome} <span class="text-on-surface-variant text-[10px]">(${aluno.turma})</span></span>
                 </label>
                 ${modalContext === 'pcd' ? `
-                    <select class="pcd-vaga-select text-xs p-1 ml-7 rounded border border-outline-variant bg-surface-highest text-primary focus:outline-none ${isChecked ? '' : 'hidden'}">
+                    <select class="pcd-vaga-select text-xs p-1 ml-7 rounded border border-outline-variant bg-surface-container-highest text-primary focus:outline-none ${isChecked ? '' : 'hidden'}">
                         <option value="false" ${pcdObj && !pcdObj.consomeVaga ? 'selected' : ''}>Auxiliar NÃO ocupa vaga de outro aluno</option>
                         <option value="true" ${pcdObj && pcdObj.consomeVaga ? 'selected' : ''}>Auxiliar OCUPA vaga no grupo</option>
                     </select>
@@ -186,7 +217,6 @@ function renderizarCheckboxesModal() {
 
 document.getElementById('modalBusca').addEventListener('input', renderizarCheckboxesModal);
 
-// Validador de Conflitos
 function validarConflitos(idsSelecionados) {
     let erros = [];
     const pcdIds = estadoAtual.pcd.map(p => p.id);
@@ -223,10 +253,7 @@ function validarConflitos(idsSelecionados) {
 
 function mostrarErros(erros) {
     const el = document.getElementById('modalError');
-    if (erros.length === 0) {
-        el.classList.add('hidden');
-        return false;
-    }
+    if (erros.length === 0) { el.classList.add('hidden'); return false; }
     el.innerHTML = `<strong class="mb-1 block">Conflito detectado. Desmarque para prosseguir:</strong>${erros.join('<br>')}`;
     el.classList.remove('hidden');
     return true;
@@ -247,16 +274,14 @@ function salvarModal() {
             }
         });
         
-        const erros = validarConflitos(idsSelecionados);
-        if (mostrarErros(erros)) return; // Trava o salvamento
-        
+        if (mostrarErros(validarConflitos(idsSelecionados))) return; 
         estadoAtual.pcd = pcdsCompletos;
     } else if (modalContext === 'especiais') {
         containers.forEach(div => {
             const cb = div.querySelector('input[type="checkbox"]');
             if (cb.checked) idsSelecionados.push(cb.value);
         });
-        estadoAtual.especiais = idsSelecionados; // Sem validações necessárias
+        estadoAtual.especiais = idsSelecionados;
     }
     
     atualizarChipsUI();
@@ -266,20 +291,15 @@ function salvarModal() {
 function criarGrupoModal() {
     let selecionados = [];
     const checkboxes = document.querySelectorAll('#modalListaAlunos input[type="checkbox"]');
-    checkboxes.forEach(cb => { 
-        if (cb.checked) selecionados.push(cb.value);
-    });
+    checkboxes.forEach(cb => { if (cb.checked) selecionados.push(cb.value); });
 
     if (selecionados.length < 2) return alert('Selecione pelo menos 2 alunos para formar um grupo ou parelha.');
-    
-    const erros = validarConflitos(selecionados);
-    if (mostrarErros(erros)) return; // Trava o salvamento
+    if (mostrarErros(validarConflitos(selecionados))) return; 
 
-    // Tudo certo, salva e limpa os checkboxes
     estadoAtual[modalContext].push(selecionados);
     checkboxes.forEach(cb => cb.checked = false);
     
-    document.getElementById('modalError').classList.add('hidden'); // Limpa a barra de erro
+    document.getElementById('modalError').classList.add('hidden'); 
     renderizarGruposModal();
     renderizarCheckboxesModal(); 
 }
@@ -462,7 +482,6 @@ function processarEmbaralhamento() {
         if (isDeskFull(desk)) return false;
         if (countSlots(desk) + countSlots(chnk) > maxCapacity(desk, chnk)) return false;
         
-        // Verifica Colisão Incompatível (Ninguém do chunk pode estar em conflito com quem já está na mesa)
         for (let grupoInc of estadoAtual.incompativeis) {
             let countInDesk = desk.filter(a => grupoInc.includes(a.id)).length;
             let countInChnk = chnk.filter(a => grupoInc.includes(a.id)).length;
@@ -519,7 +538,6 @@ function processarEmbaralhamento() {
                             } else break;
                         }
                         if (splitCount > 0) {
-                            // Validar se essa quebra não joga conflitos pra dentro
                             let partialChunk = chunk.slice(0, splitCount);
                             if (canFitChunk(gruposFrente[i], partialChunk)) {
                                 gruposFrente[i] = gruposFrente[i].concat(finalNormais[0].splice(0, splitCount));
@@ -622,7 +640,6 @@ function distribuirEmSalas(grupos, numSalas, numFileiras, numCarteiras) {
     return salas;
 }
 
-// --- LÓGICA DE EDIÇÃO MANUAL ---
 function tratarCliqueMesa(salaIndex, fileira, carteira) {
     if (!estadoAtual.resultado) return;
 
@@ -676,13 +693,12 @@ function tratarCliqueMesa(salaIndex, fileira, carteira) {
     }
 }
 
-// --- RENDERIZAÇÃO E EXPORTAÇÃO ---
 function exibirResultados(resultado) {
     const st = document.getElementById('stats');
     st.innerHTML = `
-        <div class="bg-white p-4 rounded border border-gray-200 text-center shadow-sm"><span class="text-gray-500 text-xs font-label-mono block">TOTAL ALUNOS</span><span class="font-headline-lg">${resultado.totalAlunos}</span></div>
-        <div class="bg-white p-4 rounded border border-gray-200 text-center shadow-sm"><span class="text-gray-500 text-xs font-label-mono block">SALAS USADAS</span><span class="font-headline-lg">${resultado.numSalas}</span></div>
-        <div class="bg-white p-4 rounded border border-gray-200 text-center shadow-sm"><span class="text-gray-500 text-xs font-label-mono block">VAGAS TOTAIS</span><span class="font-headline-lg text-blue-600">${resultado.numSalas * resultado.numFileiras * resultado.numCarteiras}</span></div>
+        <div class="bg-surface p-4 rounded border border-outline-variant text-center shadow-sm"><span class="text-on-surface-variant text-xs font-label-mono block">TOTAL ALUNOS</span><span class="font-headline-lg text-primary">${resultado.totalAlunos}</span></div>
+        <div class="bg-surface p-4 rounded border border-outline-variant text-center shadow-sm"><span class="text-on-surface-variant text-xs font-label-mono block">SALAS USADAS</span><span class="font-headline-lg text-primary">${resultado.numSalas}</span></div>
+        <div class="bg-surface p-4 rounded border border-outline-variant text-center shadow-sm"><span class="text-on-surface-variant text-xs font-label-mono block">VAGAS TOTAIS</span><span class="font-headline-lg text-secondary-container">${resultado.numSalas * resultado.numFileiras * resultado.numCarteiras}</span></div>
     `;
     
     desenharMapa(resultado);
@@ -700,13 +716,13 @@ function desenharMapa(resultado) {
 
     resultado.salas.forEach((sala, indSala) => {
         const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center gap-4 cursor-pointer';
+        card.className = 'bg-surface p-4 rounded-xl border border-outline-variant shadow-sm flex flex-col items-center gap-4 cursor-pointer';
         card.title = "Clique em um aluno para selecioná-lo e depois em outra mesa para trocar.";
 
         const canvas = document.createElement('canvas');
         canvas.width = SALA_LARGURA + (MARGEM * 2);
         canvas.height = SALA_ALTURA + (MARGEM * 2);
-        canvas.className = 'rounded border border-gray-100 hover:shadow-md transition-shadow';
+        canvas.className = 'rounded border border-outline hover:shadow-md transition-shadow';
         
         canvas.addEventListener('click', function(e) {
             const rect = canvas.getBoundingClientRect();
@@ -735,13 +751,13 @@ function desenharMapa(resultado) {
         });
 
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#ffffff'; // Fundo do canvas continua branco para exportação limpa
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado, indSala);
 
         const btn = document.createElement('button');
-        btn.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-blue-50 border border-blue-300 text-blue-700 text-sm hover:bg-blue-100 transition-colors';
+        btn.className = 'w-full py-2 rounded font-label-mono flex items-center justify-center gap-2 bg-secondary-container/10 border border-secondary-container text-secondary-container text-sm hover:bg-secondary-container/20 transition-colors';
         btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">image</span> EXPORTAR SALA ${indSala + 1}`;
         btn.onclick = (e) => { e.stopPropagation(); exportarMapaPNG(sala, indSala + 1, resultado, indSala); };
 
@@ -862,21 +878,21 @@ function exportarMapaPNG(sala, numSala, resultado, salaIndex) {
 function gerarListaDetalhada(resultado) {
     let html = '';
     resultado.salas.forEach((sala, indSala) => {
-        html += `<div class="mb-6"><div class="font-headline-lg-mobile text-black mb-3 border-b pb-2">SALA ${indSala + 1}</div>`;
+        html += `<div class="mb-6"><div class="font-headline-lg-mobile text-primary mb-3 border-b border-outline-variant pb-2">SALA ${indSala + 1}</div>`;
         sala.forEach((cart, idx) => {
             const nomes = cart.grupo.map(a => {
-                let tagAux = estadoAtual.pcd.some(p => p.id === a.id) ? ` <span class="text-blue-600 text-[10px] font-bold uppercase tracking-wider">[+ Auxiliar]</span>` : '';
-                return `<strong class="text-black">${a.nome}</strong>${tagAux} <span class="text-gray-500 text-xs">(${a.turma})</span>`;
+                let tagAux = estadoAtual.pcd.some(p => p.id === a.id) ? ` <span class="text-secondary-container text-[10px] font-bold uppercase tracking-wider">[+ Auxiliar]</span>` : '';
+                return `<strong class="text-primary">${a.nome}</strong>${tagAux} <span class="text-on-surface-variant text-xs">(${a.turma})</span>`;
             }).join(' + ');
             
-            let style = 'bg-white';
+            let style = 'bg-surface-highest border-outline-variant';
             let tag = '';
-            if(cart.temPcd) { style = 'border-l-4 border-blue-500 bg-blue-50'; tag = '<span class="text-xs text-blue-700 font-bold tracking-widest">PCD</span>'; }
-            else if(cart.proximoProfessor) { style = 'border-l-4 border-amber-500 bg-amber-50'; tag = '<span class="text-xs text-amber-700 font-bold tracking-widest">Frente</span>'; }
+            if(cart.temPcd) { style = 'border-l-4 border-blue-500 bg-surface-variant'; tag = '<span class="text-xs text-blue-400 font-bold tracking-widest">PCD</span>'; }
+            else if(cart.proximoProfessor) { style = 'border-l-4 border-amber-500 bg-surface-variant'; tag = '<span class="text-xs text-amber-500 font-bold tracking-widest">Frente</span>'; }
             
-            html += `<div class="p-3 mb-2 rounded border border-gray-300 flex items-center gap-4 ${style}">
-                <div class="bg-gray-200 text-gray-800 px-3 py-1 rounded text-sm font-bold">${idx + 1}</div>
-                <div class="flex-1 text-sm font-body-md">${nomes}</div>
+            html += `<div class="p-3 mb-2 rounded border border-outline flex items-center gap-4 ${style}">
+                <div class="bg-surface-dim text-primary px-3 py-1 rounded border border-outline-variant text-sm font-bold">${idx + 1}</div>
+                <div class="flex-1 text-sm font-body-md text-primary">${nomes}</div>
                 ${tag}
             </div>`;
         });
@@ -886,22 +902,14 @@ function gerarListaDetalhada(resultado) {
 }
 
 function mudarAba(aba, ev) {
-    document.querySelectorAll('.tab-button').forEach(b => { b.classList.remove('bg-white', 'text-black', 'shadow-sm', 'active'); b.classList.add('text-gray-600'); });
+    document.querySelectorAll('.tab-button').forEach(b => { b.classList.remove('bg-surface-dim', 'text-primary', 'shadow-sm', 'active', 'border', 'border-outline-variant'); b.classList.add('text-on-surface-variant'); });
     document.querySelectorAll('.tab-content').forEach(c => { c.classList.add('hidden'); c.classList.remove('active'); });
-    if(ev) { ev.target.classList.add('bg-white', 'text-black', 'shadow-sm', 'active'); ev.target.classList.remove('text-gray-600'); }
+    if(ev) { ev.target.classList.add('bg-surface-dim', 'text-primary', 'shadow-sm', 'active', 'border', 'border-outline-variant'); ev.target.classList.remove('text-on-surface-variant'); }
     const el = document.getElementById(aba);
     if(el) { el.classList.remove('hidden'); el.classList.add('active'); }
 }
 
 function imprimirResultado() { window.print(); }
-
-function exportarJSON() {
-    if (!estadoAtual.resultado) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(estadoAtual.resultado, null, 2)], { type: 'application/json' }));
-    a.download = `mapeamento-${estadoAtual.disciplina}-${new Date().getTime()}.json`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
 
 function voltarFormulario() {
     document.getElementById('resultSection').classList.add('hidden');
@@ -926,9 +934,8 @@ function mostrarErro(m) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function limparErro() { 
-    document.getElementById('errorMessage').classList.add('hidden'); 
-}
+function limparErro() { document.getElementById('errorMessage').classList.add('hidden'); }
+
 // --- FUNÇÕES DO MANUAL ---
 function abrirManual() {
     document.getElementById('modalManual').classList.remove('hidden');
