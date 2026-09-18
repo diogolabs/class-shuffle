@@ -9,56 +9,71 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="style.css">
     
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "error": "#ffb4ab",
-                        "background": "#14130e",
-                        "surface-container-low": "#1d1c15",
-                        "surface-dim": "#14130e",
-                        "on-secondary-container": "#00686f",
-                        "surface-container-highest": "#36352e",
-                        "surface-bright": "#3b3932",
-                        "on-secondary": "#00363a",
-                        "surface": "#14130e",
-                        "on-background": "#e7e2d8",
-                        "outline": "#969178",
-                        "on-surface-variant": "#ccc7ac",
-                        "surface-variant": "#36352e",
-                        "primary": "#fffaff",
-                        "surface-container-high": "#2b2a23",
-                        "primary-container": "#f4e225",
-                        "secondary": "#d3fbff",
-                        "surface-container-lowest": "#0f0e09"
-                    },
-                    "fontFamily": {
-                        "body-md": ["Space Grotesk"],
-                        "headline-xl": ["Space Grotesk"],
-                        "label-mono": ["Courier Prime"],
-                        "headline-lg-mobile": ["Space Grotesk"]
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { background-color: #14130e; color: #e7e2d8; }
-        .glass-panel {
-            background: rgba(24, 23, 17, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(74, 71, 51, 0.5);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        /* MOTOR DE TEMA: Mapeamento de Variáveis CSS */
+        :root {
+            --bg: #fdfdfc;
+            --s-lowest: #ffffff;
+            --s-low: #f4f4f5;
+            --s-high: #e4e4e7;
+            --s-highest: #d4d4d8;
+            --s-var: #e4e4e7;
+            --s-dim: #d4d4d8;
+            --surface: #fdfdfc;
+            --primary: #18181b;
+            --p-cont: #f4e225;
+            --on-p-cont: #1f1c00;
+            --sec-cont: #0891b2;
+            --err: #dc2626;
+            --out-var: #a1a1aa;
+            --out: #71717a;
+            --on-s-var: #52525b;
+            --glass: rgba(255, 255, 255, 0.85);
         }
-        .btn-primary { background-color: #f4e225; color: #1f1c00; transition: all 0.3s ease; }
+
+        .dark {
+            --bg: #14130e;
+            --s-lowest: #0f0e09;
+            --s-low: #1d1c15;
+            --s-high: #2b2a23;
+            --s-highest: #36352e;
+            --s-var: #36352e;
+            --s-dim: #14130e;
+            --surface: #14130e;
+            --primary: #fffaff;
+            --p-cont: #f4e225;
+            --on-p-cont: #1f1c00;
+            --sec-cont: #00eefc;
+            --err: #ffb4ab;
+            --out-var: #4a4733;
+            --out: #969178;
+            --on-s-var: #ccc7ac;
+            --glass: rgba(24, 23, 17, 0.7);
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: var(--primary); 
+            transition: background-color 0.3s ease, color 0.3s ease; 
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--out-var);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary { background-color: var(--p-cont); color: var(--on-p-cont); transition: all 0.3s ease; }
         .btn-primary:hover { box-shadow: 0 0 15px rgba(244, 226, 37, 0.4); transform: translateY(-2px); }
-        .btn-secondary { background: transparent; border: 1px solid #00eefc; color: #00eefc; transition: all 0.3s ease; }
-        .btn-secondary:hover { box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); background: rgba(0, 238, 252, 0.1); }
+        .btn-secondary { background: transparent; border: 1px solid var(--sec-cont); color: var(--sec-cont); transition: all 0.3s ease; }
+        .btn-secondary:hover { box-shadow: 0 0 15px rgba(0, 238, 252, 0.2); background: rgba(0, 238, 252, 0.1); }
+        
         ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #0f0e09; }
-        ::-webkit-scrollbar-thumb { background: #36352e; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: var(--s-lowest); }
+        ::-webkit-scrollbar-thumb { background: var(--s-highest); border-radius: 4px; }
+        
         .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
@@ -82,10 +97,45 @@
             transform: scale(1.02);
         }
     </style>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "var(--bg)",
+                        "surface-container-lowest": "var(--s-lowest)",
+                        "surface-container-low": "var(--s-low)",
+                        "surface-container": "var(--s-high)",
+                        "surface-container-high": "var(--s-high)",
+                        "surface-container-highest": "var(--s-highest)",
+                        "surface-variant": "var(--s-var)",
+                        "surface-dim": "var(--s-dim)",
+                        "surface": "var(--surface)",
+                        "primary": "var(--primary)",
+                        "primary-container": "var(--p-cont)",
+                        "on-primary-container": "var(--on-p-cont)",
+                        "secondary-container": "var(--sec-cont)",
+                        "error": "var(--err)",
+                        "outline-variant": "var(--out-var)",
+                        "outline": "var(--out)",
+                        "on-surface-variant": "var(--on-s-var)"
+                    },
+                    fontFamily: {
+                        "body-md": ["Space Grotesk"],
+                        "headline-xl": ["Space Grotesk"],
+                        "label-mono": ["Courier Prime"],
+                        "headline-lg-mobile": ["Space Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 <body class="font-body-md min-h-screen flex flex-col md:flex-row overflow-x-hidden">
 
-<nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
+<nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40 transition-colors duration-300">
     <div class="px-6 mb-8 mt-4">
         <a href="https://diogolabs.dev.br" class="font-headline-lg-mobile font-bold text-primary tracking-tighter glitch-auto cursor-pointer">Diogolabs</a>
         <div class="flex items-center gap-3 mt-4">
@@ -94,14 +144,16 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono font-bold text-sm">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v4.7 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.8 Stable</div>
             </div>
         </div>
     </div>
     <div class="flex-1 px-4 space-y-3 mt-4">
-        <!-- NOVOS BOTÕES NA BARRA LATERAL -->
         <button type="button" onclick="abrirManual()" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-[0_0_10px_rgba(244,226,37,0.4)] font-label-mono text-sm transition-transform hover:scale-[1.02]">
             <span class="material-symbols-outlined">menu_book</span> Manual de Uso
+        </button>
+        <button type="button" onclick="toggleTheme()" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container-highest border border-outline-variant text-primary font-bold font-label-mono text-sm hover:bg-surface-variant transition-colors">
+            <span class="material-symbols-outlined" id="themeIcon">light_mode</span> <span id="themeText">Modo Claro</span>
         </button>
         <button type="button" onclick="limparFormulario()" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container border border-outline-variant text-error font-bold font-label-mono text-sm hover:bg-error/10 hover:border-error transition-colors">
             <span class="material-symbols-outlined">delete_sweep</span> Limpar Tudo
@@ -109,14 +161,19 @@
     </div>
 </nav>
 
-<main class="flex-1 w-full md:ml-64 pt-8 px-4 md:px-12 pb-24 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high via-background to-surface-container-lowest">
+<main class="flex-1 w-full md:ml-64 pt-8 px-4 md:px-12 pb-24 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high via-background to-surface-container-lowest transition-colors duration-300">
     <div class="max-w-5xl mx-auto">
         <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-4">
             <h1 class="font-headline-xl text-primary mb-2 text-center md:text-left">Mapeador de Turmas</h1>
-            <!-- Botão de manual mobile para quem usa em tela pequena -->
-            <button type="button" onclick="abrirManual()" class="md:hidden flex items-center gap-2 px-3 py-2 rounded border border-primary-container text-primary-container text-xs font-label-mono">
-                <span class="material-symbols-outlined text-[16px]">menu_book</span> MANUAL
-            </button>
+            <!-- Botões Mobile -->
+            <div class="flex items-center gap-2 md:hidden">
+                <button type="button" onclick="toggleTheme()" class="flex items-center justify-center p-2 rounded border border-outline-variant text-primary font-label-mono bg-surface-container-highest">
+                    <span class="material-symbols-outlined text-[18px]" id="themeIconMobile">light_mode</span>
+                </button>
+                <button type="button" onclick="abrirManual()" class="flex items-center gap-2 px-3 py-2 rounded border border-primary-container text-primary-container text-xs font-label-mono bg-surface-container-highest">
+                    <span class="material-symbols-outlined text-[18px]">menu_book</span> MANUAL
+                </button>
+            </div>
         </header>
 
         <div id="errorMessage" class="mb-6 bg-error/20 text-error border-l-4 border-error p-4 rounded font-label-mono hidden"></div>
@@ -125,7 +182,6 @@
         <div id="formSection" class="glass-panel rounded-xl p-6 mb-10 flex flex-col gap-6">
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Coluna 1: Geometria (Sempre visível) -->
                 <div class="flex flex-col gap-5">
                     <h2 class="font-headline-lg-mobile text-secondary-container border-b border-outline-variant pb-2 flex items-center gap-2">
                         <span class="material-symbols-outlined">tune</span> Parâmetros Físicos
@@ -165,13 +221,11 @@
                     </div>
                 </div>
 
-                <!-- Coluna 2: Lógica de Duas Etapas -->
                 <div class="flex flex-col gap-5 border-l border-outline-variant pl-0 md:pl-6">
                     <h2 class="font-headline-lg-mobile text-primary-container border-b border-outline-variant pb-2 flex items-center gap-2">
                         <span class="material-symbols-outlined">group</span> Gestão de Alunos
                     </h2>
 
-                    <!-- ETAPA 1: Carregamento por Lotes -->
                     <div id="step1_carregar" class="flex flex-col gap-4">
                         <div class="flex flex-col gap-2">
                             <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Nome da Turma</label>
@@ -194,7 +248,6 @@
                         </button>
                     </div>
 
-                    <!-- ETAPA 2: Regras e Tags -->
                     <div id="step2_regras" class="hidden flex-col gap-4">
                         <div class="flex items-center justify-between bg-surface-container-highest p-3 rounded border border-outline-variant">
                             <div class="flex items-center gap-2">
@@ -207,7 +260,6 @@
                             <button type="button" onclick="destravarTurma()" class="text-error hover:underline text-xs font-label-mono">EDITAR</button>
                         </div>
 
-                        <!-- Botões de Regra -->
                         <div class="grid grid-cols-2 gap-3 mt-2">
                             <div class="flex flex-col gap-2">
                                 <button type="button" onclick="abrirModal('especiais')" class="bg-surface-container border border-outline-variant text-primary text-xs font-label-mono py-2 rounded hover:border-secondary-container transition-colors flex items-center justify-center gap-1">
@@ -248,7 +300,6 @@
             </div>
         </div>
 
-        <!-- RESULTS SECTION -->
         <div id="resultSection" class="hidden flex-col gap-6">
             <div id="successMessage" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded font-label-mono"></div>
             <div id="stats" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
@@ -283,7 +334,6 @@
     </div>
 </main>
 
-<!-- MODAL GENÉRICO PARA SELEÇÃO E FORMAÇÃO DE GRUPOS -->
 <div id="modalOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center px-4">
     <div class="bg-surface-container rounded-xl border border-outline-variant w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl modal-enter">
         <div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-highest rounded-t-xl">
@@ -308,12 +358,12 @@
 
         <div id="modalFooter" class="p-4 border-t border-outline-variant bg-surface-container-highest rounded-b-xl flex justify-end gap-3">
             <button onclick="fecharModal()" class="px-4 py-2 text-sm font-label-mono text-on-surface-variant hover:text-primary">CANCELAR</button>
-            <button onclick="salvarModal()" class="px-4 py-2 text-sm font-label-mono bg-primary text-on-primary rounded font-bold hover:opacity-90">SALVAR SELEÇÃO</button>
+            <!-- CORRIGIDO: text-background em vez de text-on-primary para inverter no modo claro -->
+            <button onclick="salvarModal()" class="px-4 py-2 text-sm font-label-mono bg-primary text-background rounded font-bold hover:opacity-90">SALVAR SELEÇÃO</button>
         </div>
     </div>
 </div>
 
-<!-- MODAL DO MANUAL -->
 <div id="modalManual" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center px-4">
     <div class="bg-surface-container rounded-xl border border-outline-variant w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl modal-enter">
         <div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-highest rounded-t-xl">
