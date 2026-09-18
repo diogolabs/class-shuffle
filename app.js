@@ -1,3 +1,8 @@
+// --- CONFIGURAÇÃO DO GITHUB ---
+// IMPORTANTE: Substitua a URL abaixo pela URL "Raw" do seu README no GitHub.
+const GITHUB_README_URL = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/README.md"; 
+let manualCarregado = false;
+
 let estadoAtual = {
     disciplina: '', numSalas: 2, numFileiras: 5, numCarteiras: 6,
     agrupamento: 'solo', tamanhoGrupo: 3, regraTurma: 'nenhuma',
@@ -751,7 +756,7 @@ function desenharMapa(resultado) {
         });
 
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff'; // Fundo do canvas continua branco para exportação limpa
+        ctx.fillStyle = '#ffffff'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         desenharSala(ctx, MARGEM, MARGEM, SALA_LARGURA, SALA_ALTURA, sala, indSala + 1, resultado, indSala);
@@ -910,13 +915,11 @@ function mudarAba(aba, ev) {
 }
 
 function imprimirResultado() { window.print(); }
-
 function voltarFormulario() {
     document.getElementById('resultSection').classList.add('hidden');
     document.getElementById('resultSection').style.display = 'none';
     document.getElementById('formSection').style.display = 'flex';
 }
-
 function limparFormulario() {
     document.getElementById('disciplina').value = '';
     document.getElementById('nomeTurmaTemp').value = '';
@@ -926,20 +929,41 @@ function limparFormulario() {
     destravarTurma();
     limparErro();
 }
-
 function mostrarErro(m) { 
     const e = document.getElementById('errorMessage');
-    e.textContent = m; 
-    e.classList.remove('hidden'); 
+    e.textContent = m; e.classList.remove('hidden'); 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 function limparErro() { document.getElementById('errorMessage').classList.add('hidden'); }
 
-// --- FUNÇÕES DO MANUAL ---
-function abrirManual() {
+// --- FUNÇÕES DO MANUAL VIA GITHUB RAW ---
+async function abrirManual() {
     document.getElementById('modalManual').classList.remove('hidden');
     document.getElementById('modalManual').classList.add('flex');
+    
+    if (!manualCarregado) {
+        const container = document.getElementById('conteudoManual');
+        try {
+            // Buscando o README direto do GitHub
+            const response = await fetch(GITHUB_README_URL);
+            if (!response.ok) throw new Error('Falha HTTP: ' + response.status);
+            
+            const markdownText = await response.text();
+            
+            // Converte Markdown em HTML usando a biblioteca Marked.js
+            container.innerHTML = marked.parse(markdownText);
+            manualCarregado = true;
+        } catch (erro) {
+            console.error('Erro ao buscar manual do GitHub:', erro);
+            container.innerHTML = `
+                <div class="flex flex-col items-center gap-4 text-error p-6 bg-error/10 border border-error/50 rounded">
+                    <span class="material-symbols-outlined text-4xl">cloud_off</span>
+                    <p class="text-center font-bold">Erro ao carregar o manual.</p>
+                    <p class="text-center text-xs opacity-80">Verifique a conexão de internet ou se a URL configurada no <code>GITHUB_README_URL</code> está correta (formato Raw).</p>
+                </div>
+            `;
+        }
+    }
 }
 
 function fecharManual() {
