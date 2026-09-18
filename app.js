@@ -5,8 +5,6 @@ let estadoAtual = {
     resultado: null
 };
 
-// Observação: incompativeis agora é Array de Arrays, igual inseparaveis!
-
 let lotesDeTurmas = [];
 let alunosCarregados = [];
 let modalContext = ''; 
@@ -102,7 +100,7 @@ function destravarTurma() {
     atualizarChipsUI();
 }
 
-// --- SISTEMA DE MODAL ---
+// --- SISTEMA DE MODAL COM VALIDAÇÃO (SOFT-LOCK) ---
 function abrirModal(tipo) {
     modalContext = tipo;
     const modal = document.getElementById('modalOverlay');
@@ -111,6 +109,7 @@ function abrirModal(tipo) {
     const footer = document.getElementById('modalFooter');
     
     document.getElementById('modalBusca').value = '';
+    document.getElementById('modalError').classList.add('hidden');
 
     areaGrupos.classList.add('hidden');
     areaGrupos.classList.remove('flex');
@@ -141,6 +140,7 @@ function abrirModal(tipo) {
 
 function fecharModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
+    document.getElementById('modalError').classList.add('hidden');
     if (modalContext === 'inseparaveis' || modalContext === 'incompativeis') atualizarChipsUI();
 }
 
@@ -148,53 +148,29 @@ function renderizarCheckboxesModal() {
     const container = document.getElementById('modalListaAlunos');
     const busca = document.getElementById('modalBusca').value.toLowerCase();
     
-    const flatInseparaveis = estadoAtual.inseparaveis.flat();
-    const flatIncompativeis = estadoAtual.incompativeis.flat();
-
     let html = '';
     alunosCarregados.forEach(aluno => {
         if (busca && !aluno.nome.toLowerCase().includes(busca)) return;
         
         let isChecked = false;
-        let isDisabled = false;
-        let reason = '';
         
-        const isPcd = estadoAtual.pcd.some(p => p.id === aluno.id);
-        const pcdObj = estadoAtual.pcd.find(p => p.id === aluno.id);
-        const isIncomp = flatIncompativeis.includes(aluno.id);
-        const isInsep = flatInseparaveis.includes(aluno.id);
-
         if (modalContext === 'pcd') {
-            isChecked = isPcd;
-            if (!isChecked) {
-                if (isInsep) { isDisabled = true; reason = '(Agrupado)'; }
-                else if (isIncomp) { isDisabled = true; reason = '(Incompatível)'; }
-            }
-        }
-        else if (modalContext === 'especiais') {
+            isChecked = estadoAtual.pcd.some(p => p.id === aluno.id);
+        } else if (modalContext === 'especiais') {
             isChecked = estadoAtual.especiais.includes(aluno.id);
+        } else if (modalContext === 'incompativeis' || modalContext === 'inseparaveis') {
+            isChecked = false; // Checkboxes soltos para montar novos grupos
         }
-        else if (modalContext === 'incompativeis') {
-            isChecked = false;
-            if (isIncomp) { isDisabled = true; reason = '(Já no conflito)'; }
-            else if (isPcd) { isDisabled = true; reason = '(PCD)'; }
-            else if (isInsep) { isDisabled = true; reason = '(Inseparável)'; }
-        }
-        else if (modalContext === 'inseparaveis') {
-            isChecked = false;
-            if (isInsep) { isDisabled = true; reason = '(Já agrupado)'; }
-            else if (isPcd) { isDisabled = true; reason = '(PCD)'; }
-            else if (isIncomp) { isDisabled = true; reason = '(Incompatível)'; }
-        }
+
+        const pcdObj = estadoAtual.pcd.find(p => p.id === aluno.id);
 
         html += `
-            <div class="flex flex-col gap-1 p-2 rounded hover:bg-surface-variant transition-colors ${isDisabled ? 'opacity-40' : ''}">
-                <label class="flex items-center gap-3 cursor-pointer ${isDisabled ? 'cursor-not-allowed' : ''}">
+            <div class="flex flex-col gap-1 p-2 rounded hover:bg-surface-variant transition-colors">
+                <label class="flex items-center gap-3 cursor-pointer">
                     <input type="checkbox" value="${aluno.id.replace(/"/g, '&quot;')}" class="form-checkbox text-primary-container bg-surface border-outline-variant focus:ring-0 rounded" 
-                        ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}
+                        ${isChecked ? 'checked' : ''}
                         ${modalContext === 'pcd' ? `onchange="this.closest('div').querySelector('.pcd-vaga-select').classList.toggle('hidden', !this.checked)"` : ''}>
                     <span class="font-label-mono text-sm text-primary flex-1">${aluno.nome} <span class="text-on-surface-variant text-[10px]">(${aluno.turma})</span></span>
-                    <span class="text-xs text-error font-label-mono">${reason}</span>
                 </label>
                 ${modalContext === 'pcd' ? `
                     <select class="pcd-vaga-select text-xs p-1 ml-7 rounded border border-outline-variant bg-surface-highest text-primary focus:outline-none ${isChecked ? '' : 'hidden'}">
@@ -210,26 +186,77 @@ function renderizarCheckboxesModal() {
 
 document.getElementById('modalBusca').addEventListener('input', renderizarCheckboxesModal);
 
-function salvarModal() {
+// Validador de Conflitos
+function validarConflitos(idsSelecionados) {
+    let erros = [];
+    const pcdIds = estadoAtual.pcd.map(p => p.id);
+    const insepIds = estadoAtual.inseparaveis.flat();
+    const incompIds = estadoAtual.incompativeis.flat();
+
+    const obterNomes = (ids) => ids.map(id => alunosCarregados.find(a => a.id === id)?.nome || id).join(', ');
+
     if (modalContext === 'pcd') {
-        const containers = document.querySelectorAll('#modalListaAlunos > div');
-        let selecionados = [];
+        const confInsep = idsSelecionados.filter(id => insepIds.includes(id));
+        const confIncomp = idsSelecionados.filter(id => incompIds.includes(id));
+        if (confInsep.length > 0) erros.push(`➔ Agrupados como Inseparáveis: ${obterNomes(confInsep)}`);
+        if (confIncomp.length > 0) erros.push(`➔ Estão na lista Incompatível: ${obterNomes(confIncomp)}`);
+    } 
+    else if (modalContext === 'inseparaveis') {
+        const confPcd = idsSelecionados.filter(id => pcdIds.includes(id));
+        const confIncomp = idsSelecionados.filter(id => incompIds.includes(id));
+        const confInsep = idsSelecionados.filter(id => insepIds.includes(id)); 
+        if (confPcd.length > 0) erros.push(`➔ PCD (Não Agrupa): ${obterNomes(confPcd)}`);
+        if (confIncomp.length > 0) erros.push(`➔ Possui conflito Incompatível: ${obterNomes(confIncomp)}`);
+        if (confInsep.length > 0) erros.push(`➔ Já está em outro grupo: ${obterNomes(confInsep)}`);
+    } 
+    else if (modalContext === 'incompativeis') {
+        const confPcd = idsSelecionados.filter(id => pcdIds.includes(id));
+        const confInsep = idsSelecionados.filter(id => insepIds.includes(id));
+        const confIncomp = idsSelecionados.filter(id => incompIds.includes(id)); 
+        if (confPcd.length > 0) erros.push(`➔ PCD (Regra Isolada): ${obterNomes(confPcd)}`);
+        if (confInsep.length > 0) erros.push(`➔ É grupo Inseparável: ${obterNomes(confInsep)}`);
+        if (confIncomp.length > 0) erros.push(`➔ Já em outro conflito: ${obterNomes(confIncomp)}`);
+    }
+
+    return erros;
+}
+
+function mostrarErros(erros) {
+    const el = document.getElementById('modalError');
+    if (erros.length === 0) {
+        el.classList.add('hidden');
+        return false;
+    }
+    el.innerHTML = `<strong class="mb-1 block">Conflito detectado. Desmarque para prosseguir:</strong>${erros.join('<br>')}`;
+    el.classList.remove('hidden');
+    return true;
+}
+
+function salvarModal() {
+    let idsSelecionados = [];
+    const containers = document.querySelectorAll('#modalListaAlunos > div');
+    
+    if (modalContext === 'pcd') {
+        let pcdsCompletos = [];
         containers.forEach(div => {
             const cb = div.querySelector('input[type="checkbox"]');
-            if (cb.checked && !cb.disabled) {
+            if (cb.checked) {
+                idsSelecionados.push(cb.value);
                 const select = div.querySelector('.pcd-vaga-select');
-                selecionados.push({
-                    id: cb.value,
-                    consomeVaga: select ? select.value === 'true' : false
-                });
+                pcdsCompletos.push({ id: cb.value, consomeVaga: select ? select.value === 'true' : false });
             }
         });
-        estadoAtual.pcd = selecionados;
-    } else if (modalContext !== 'inseparaveis' && modalContext !== 'incompativeis') {
-        const checkboxes = document.querySelectorAll('#modalListaAlunos input[type="checkbox"]');
-        let selecionados = [];
-        checkboxes.forEach(cb => { if (cb.checked && !cb.disabled) selecionados.push(cb.value); });
-        estadoAtual[modalContext] = selecionados;
+        
+        const erros = validarConflitos(idsSelecionados);
+        if (mostrarErros(erros)) return; // Trava o salvamento
+        
+        estadoAtual.pcd = pcdsCompletos;
+    } else if (modalContext === 'especiais') {
+        containers.forEach(div => {
+            const cb = div.querySelector('input[type="checkbox"]');
+            if (cb.checked) idsSelecionados.push(cb.value);
+        });
+        estadoAtual.especiais = idsSelecionados; // Sem validações necessárias
     }
     
     atualizarChipsUI();
@@ -237,19 +264,22 @@ function salvarModal() {
 }
 
 function criarGrupoModal() {
-    const containers = document.querySelectorAll('#modalListaAlunos > div');
     let selecionados = [];
-    containers.forEach(div => { 
-        const cb = div.querySelector('input[type="checkbox"]');
-        if (cb.checked && !cb.disabled) {
-            selecionados.push(cb.value);
-            cb.checked = false; 
-        }
+    const checkboxes = document.querySelectorAll('#modalListaAlunos input[type="checkbox"]');
+    checkboxes.forEach(cb => { 
+        if (cb.checked) selecionados.push(cb.value);
     });
 
     if (selecionados.length < 2) return alert('Selecione pelo menos 2 alunos para formar um grupo ou parelha.');
     
+    const erros = validarConflitos(selecionados);
+    if (mostrarErros(erros)) return; // Trava o salvamento
+
+    // Tudo certo, salva e limpa os checkboxes
     estadoAtual[modalContext].push(selecionados);
+    checkboxes.forEach(cb => cb.checked = false);
+    
+    document.getElementById('modalError').classList.add('hidden'); // Limpa a barra de erro
     renderizarGruposModal();
     renderizarCheckboxesModal(); 
 }
@@ -427,12 +457,12 @@ function processarEmbaralhamento() {
 
     const isDeskFull = (desk) => countSlots(desk) >= maxCapacity(desk, null);
     
-    // Motor robusto de colisão: Verifica tamanho físico e regras de Incompatibilidade de Grupos
     const canFitChunk = (desk, chnk) => {
         if (desk.length === 0 && countSlots(chnk) <= maxCapacity(null, chnk)) return true; 
         if (isDeskFull(desk)) return false;
         if (countSlots(desk) + countSlots(chnk) > maxCapacity(desk, chnk)) return false;
         
+        // Verifica Colisão Incompatível (Ninguém do chunk pode estar em conflito com quem já está na mesa)
         for (let grupoInc of estadoAtual.incompativeis) {
             let countInDesk = desk.filter(a => grupoInc.includes(a.id)).length;
             let countInChnk = chnk.filter(a => grupoInc.includes(a.id)).length;
@@ -489,8 +519,12 @@ function processarEmbaralhamento() {
                             } else break;
                         }
                         if (splitCount > 0) {
-                            gruposFrente[i] = gruposFrente[i].concat(finalNormais[0].splice(0, splitCount));
-                            if (finalNormais[0].length === 0) finalNormais.shift();
+                            // Validar se essa quebra não joga conflitos pra dentro
+                            let partialChunk = chunk.slice(0, splitCount);
+                            if (canFitChunk(gruposFrente[i], partialChunk)) {
+                                gruposFrente[i] = gruposFrente[i].concat(finalNormais[0].splice(0, splitCount));
+                                if (finalNormais[0].length === 0) finalNormais.shift();
+                            } else { break; }
                         }
                     }
                     break;
@@ -533,8 +567,14 @@ function processarEmbaralhamento() {
                         } else break;
                     }
                     if (splitCount > 0) {
-                        currentDesk = currentDesk.concat(finalNormais[0].splice(0, splitCount));
-                        if (finalNormais[0].length === 0) finalNormais.shift();
+                        let partialChunk = chunk.slice(0, splitCount);
+                        if (canFitChunk(currentDesk, partialChunk)) {
+                            currentDesk = currentDesk.concat(finalNormais[0].splice(0, splitCount));
+                            if (finalNormais[0].length === 0) finalNormais.shift();
+                        } else {
+                            gruposGerais.push(currentDesk);
+                            currentDesk = [];
+                        }
                     } else {
                         gruposGerais.push(currentDesk);
                         currentDesk = [];
@@ -889,4 +929,3 @@ function mostrarErro(m) {
 function limparErro() { 
     document.getElementById('errorMessage').classList.add('hidden'); 
 }
-
