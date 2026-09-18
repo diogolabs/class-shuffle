@@ -61,13 +61,35 @@
         ::-webkit-scrollbar-thumb { background: #36352e; border-radius: 4px; }
         .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        /* Animação de Glitch Automático Diogolabs */
+        @keyframes cyber-glitch {
+            0%, 85%, 100% { text-shadow: none; transform: none; }
+            87% { text-shadow: -2px 0 #00eefc, 2px 0 #f4e225; transform: skewX(-5deg); }
+            90% { text-shadow: 2px 0 #00eefc, -2px 0 #f4e225; transform: skewX(5deg); }
+            92% { text-shadow: none; transform: none; }
+            95% { text-shadow: -1px -1px #00eefc, 1px 1px #ffb4ab; transform: translate(-1px, 1px); }
+            97% { text-shadow: 1px 1px #00eefc, -1px -1px #ffb4ab; transform: translate(1px, -1px); }
+        }
+        .glitch-auto {
+            animation: cyber-glitch 4s infinite;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+        .glitch-auto:hover {
+            animation: none; /* Para o glitch quando o mouse passa por cima */
+            color: #00eefc; /* Acende no tom de Ciano */
+            text-shadow: 0 0 10px rgba(0, 238, 252, 0.6), 0 0 20px rgba(0, 238, 252, 0.3);
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body class="font-body-md min-h-screen flex flex-col md:flex-row overflow-x-hidden">
 
 <nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
     <div class="px-6 mb-8 mt-4">
-        <a href="https://diogolabs.dev.br" class="font-headline-lg-mobile font-bold text-primary tracking-tighter hover:text-primary-container transition-colors inline-block">Diogolabs</a>
+        <!-- LOGO COM EFEITO GLITCH + NEON HOVER -->
+        <a href="https://diogolabs.dev.br" class="font-headline-lg-mobile font-bold text-primary tracking-tighter glitch-auto cursor-pointer">Diogolabs</a>
         <div class="flex items-center gap-3 mt-4">
             <div class="w-10 h-10 rounded-lg bg-surface-variant p-1 flex items-center justify-center text-secondary-container">
                 <span class="material-symbols-outlined">memory</span>
@@ -239,6 +261,7 @@
                 <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200"></div>
                 <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200"><div id="listContainer"></div></div>
 
+                <!-- Botões Inferiores Ajustados sem o CSV -->
                 <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
                     <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
                         <span class="material-symbols-outlined">print</span> IMPRIMIR
