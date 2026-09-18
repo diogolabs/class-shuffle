@@ -74,7 +74,7 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono font-bold text-sm">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v4.5 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.6 Stable</div>
             </div>
         </div>
     </div>
@@ -239,7 +239,6 @@
                 <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200"></div>
                 <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200"><div id="listContainer"></div></div>
 
-                <!-- Botão de CSV removido para manter a funcionalidade premium futura -->
                 <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
                     <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
                         <span class="material-symbols-outlined">print</span> IMPRIMIR
@@ -277,6 +276,9 @@
             <div id="modalListaAlunos" class="flex flex-col gap-1"></div>
         </div>
         
+        <!-- DIV DE ERRO (NOVIDADE) -->
+        <div id="modalError" class="hidden px-4 py-3 border-t border-error/50 bg-error/10 text-error text-xs font-label-mono overflow-y-auto max-h-24"></div>
+
         <div id="modalFooter" class="p-4 border-t border-outline-variant bg-surface-container-highest rounded-b-xl flex justify-end gap-3">
             <button onclick="fecharModal()" class="px-4 py-2 text-sm font-label-mono text-on-surface-variant hover:text-primary">CANCELAR</button>
             <button onclick="salvarModal()" class="px-4 py-2 text-sm font-label-mono bg-primary text-on-primary rounded font-bold hover:opacity-90">SALVAR SELEÇÃO</button>
