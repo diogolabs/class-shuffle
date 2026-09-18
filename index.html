@@ -62,7 +62,6 @@
         .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-        /* Animação de Glitch Automático Diogolabs */
         @keyframes cyber-glitch {
             0%, 85%, 100% { text-shadow: none; transform: none; }
             87% { text-shadow: -2px 0 #00eefc, 2px 0 #f4e225; transform: skewX(-5deg); }
@@ -77,8 +76,8 @@
             transition: all 0.2s ease;
         }
         .glitch-auto:hover {
-            animation: none; /* Para o glitch quando o mouse passa por cima */
-            color: #00eefc; /* Acende no tom de Ciano */
+            animation: none;
+            color: #00eefc;
             text-shadow: 0 0 10px rgba(0, 238, 252, 0.6), 0 0 20px rgba(0, 238, 252, 0.3);
             transform: scale(1.02);
         }
@@ -88,7 +87,6 @@
 
 <nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
     <div class="px-6 mb-8 mt-4">
-        <!-- LOGO COM EFEITO GLITCH + NEON HOVER -->
         <a href="https://diogolabs.dev.br" class="font-headline-lg-mobile font-bold text-primary tracking-tighter glitch-auto cursor-pointer">Diogolabs</a>
         <div class="flex items-center gap-3 mt-4">
             <div class="w-10 h-10 rounded-lg bg-surface-variant p-1 flex items-center justify-center text-secondary-container">
@@ -96,21 +94,29 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono font-bold text-sm">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v4.6 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.7 Stable</div>
             </div>
         </div>
     </div>
-    <div class="flex-1 px-4 space-y-2">
-        <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-[0_0_10px_rgba(244,226,37,0.4)] font-label-mono text-sm" href="https://diogolabs.dev.br">
-            <span class="material-symbols-outlined">grid_view</span> Dashboard
-        </a>
+    <div class="flex-1 px-4 space-y-3 mt-4">
+        <!-- NOVOS BOTÕES NA BARRA LATERAL -->
+        <button type="button" onclick="abrirManual()" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container font-bold shadow-[0_0_10px_rgba(244,226,37,0.4)] font-label-mono text-sm transition-transform hover:scale-[1.02]">
+            <span class="material-symbols-outlined">menu_book</span> Manual de Uso
+        </button>
+        <button type="button" onclick="limparFormulario()" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container border border-outline-variant text-error font-bold font-label-mono text-sm hover:bg-error/10 hover:border-error transition-colors">
+            <span class="material-symbols-outlined">delete_sweep</span> Limpar Tudo
+        </button>
     </div>
 </nav>
 
 <main class="flex-1 w-full md:ml-64 pt-8 px-4 md:px-12 pb-24 min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high via-background to-surface-container-lowest">
     <div class="max-w-5xl mx-auto">
-        <header class="mb-10">
+        <header class="mb-10 flex flex-col md:flex-row justify-between items-center gap-4">
             <h1 class="font-headline-xl text-primary mb-2 text-center md:text-left">Mapeador de Turmas</h1>
+            <!-- Botão de manual mobile para quem usa em tela pequena -->
+            <button type="button" onclick="abrirManual()" class="md:hidden flex items-center gap-2 px-3 py-2 rounded border border-primary-container text-primary-container text-xs font-label-mono">
+                <span class="material-symbols-outlined text-[16px]">menu_book</span> MANUAL
+            </button>
         </header>
 
         <div id="errorMessage" class="mb-6 bg-error/20 text-error border-l-4 border-error p-4 rounded font-label-mono hidden"></div>
@@ -261,7 +267,6 @@
                 <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200"></div>
                 <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200"><div id="listContainer"></div></div>
 
-                <!-- Botões Inferiores Ajustados sem o CSV -->
                 <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
                     <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
                         <span class="material-symbols-outlined">print</span> IMPRIMIR
@@ -299,12 +304,49 @@
             <div id="modalListaAlunos" class="flex flex-col gap-1"></div>
         </div>
         
-        <!-- DIV DE ERRO (NOVIDADE) -->
         <div id="modalError" class="hidden px-4 py-3 border-t border-error/50 bg-error/10 text-error text-xs font-label-mono overflow-y-auto max-h-24"></div>
 
         <div id="modalFooter" class="p-4 border-t border-outline-variant bg-surface-container-highest rounded-b-xl flex justify-end gap-3">
             <button onclick="fecharModal()" class="px-4 py-2 text-sm font-label-mono text-on-surface-variant hover:text-primary">CANCELAR</button>
             <button onclick="salvarModal()" class="px-4 py-2 text-sm font-label-mono bg-primary text-on-primary rounded font-bold hover:opacity-90">SALVAR SELEÇÃO</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DO MANUAL -->
+<div id="modalManual" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center px-4">
+    <div class="bg-surface-container rounded-xl border border-outline-variant w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl modal-enter">
+        <div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-highest rounded-t-xl">
+            <h3 class="font-headline-lg-mobile text-primary-container flex items-center gap-2">
+                <span class="material-symbols-outlined">menu_book</span> Manual do Sistema
+            </h3>
+            <button onclick="fecharManual()" class="text-on-surface-variant hover:text-error"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        
+        <div class="p-6 flex-1 overflow-y-auto font-label-mono text-sm space-y-6 text-on-surface-variant">
+            <div>
+                <h4 class="text-primary font-bold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">group</span> 1. Cadastro de Turmas</h4>
+                <p>O sistema funciona por "Lotes". Digite o nome da turma, cole a lista de alunos (um por linha) e clique em <strong>Adicionar Turma</strong>. Repita o processo quantas vezes precisar. Só depois clique em <strong class="text-primary-container">Confirmar Lista</strong>.</p>
+            </div>
+
+            <div>
+                <h4 class="text-primary font-bold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">gavel</span> 2. Regras e Restrições</h4>
+                <ul class="list-disc pl-5 space-y-2 mt-2">
+                    <li><strong class="text-secondary-container">FRENTE:</strong> Alunos forçados a sentar na primeira fileira.</li>
+                    <li><strong class="text-blue-400">PCD:</strong> Alunos que ganham uma carteira exclusiva. Após marcá-lo, você pode configurar se o <em>Auxiliar Ocupa ou Não a Vaga</em> de um colega dentro do grupo.</li>
+                    <li><strong class="text-error">SEPARAR:</strong> Selecione 2 ou mais alunos e clique em "Formar Grupo" para criar um <em>Conflito</em>. O algoritmo impedirá que eles sentem na mesma mesa.</li>
+                    <li><strong class="text-primary-container">JUNTAR:</strong> Forme grupos inseparáveis. O motor fará o possível para mantê-los na mesma mesa, respeitando o limite físico.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-primary font-bold mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">touch_app</span> 3. Edição Manual Fina (Magia)</h4>
+                <p>Após gerar o mapa visual, se você não concordar com alguma posição, <strong>clique em um aluno no mapa</strong> (a mesa ficará tracejada em laranja) e depois clique em outra mesa para fazer a troca instantaneamente.</p>
+            </div>
+            
+            <div class="p-4 bg-surface-variant rounded border border-outline-variant text-xs">
+                <p><strong>Nota do Sistema:</strong> O gerador prioriza a geometria física da sala. Em casos extremos de superlotação ou conflitos impossíveis, ele pode "quebrar" grupos inseparáveis para garantir que todos tenham onde sentar.</p>
+            </div>
         </div>
     </div>
 </div>
