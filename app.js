@@ -1,9 +1,11 @@
 let estadoAtual = {
     disciplina: '', numSalas: 2, numFileiras: 5, numCarteiras: 6,
     agrupamento: 'solo', tamanhoGrupo: 3, regraTurma: 'nenhuma',
-    especiais: [], incompativeis: [], pcd: [], // pcd agora é array de objetos: {id, consomeVaga}
-    inseparaveis: [], resultado: null
+    especiais: [], incompativeis: [], pcd: [], inseparaveis: [],
+    resultado: null
 };
+
+// Observação: incompativeis agora é Array de Arrays, igual inseparaveis!
 
 let lotesDeTurmas = [];
 let alunosCarregados = [];
@@ -100,29 +102,37 @@ function destravarTurma() {
     atualizarChipsUI();
 }
 
-// --- SISTEMA DE MODAL COM EXCLUSÃO MÚTUA E PCD AVANÇADO ---
+// --- SISTEMA DE MODAL ---
 function abrirModal(tipo) {
     modalContext = tipo;
     const modal = document.getElementById('modalOverlay');
     const titulo = document.getElementById('modalTitle');
-    const areaInseparaveis = document.getElementById('modalGruposInseparaveis');
+    const areaGrupos = document.getElementById('modalGruposArea');
     const footer = document.getElementById('modalFooter');
     
     document.getElementById('modalBusca').value = '';
 
-    areaInseparaveis.classList.add('hidden');
+    areaGrupos.classList.add('hidden');
+    areaGrupos.classList.remove('flex');
     footer.classList.remove('hidden');
 
     if (tipo === 'especiais') titulo.innerHTML = '<span class="material-symbols-outlined text-secondary-container">visibility</span> Alunos na Frente';
     if (tipo === 'pcd') titulo.innerHTML = '<span class="material-symbols-outlined text-blue-400">accessible</span> Alunos PCD e Auxiliares';
-    if (tipo === 'incompativeis') titulo.innerHTML = '<span class="material-symbols-outlined text-error">front_hand</span> Separar Alunos';
+    
+    if (tipo === 'incompativeis') {
+        titulo.innerHTML = '<span class="material-symbols-outlined text-error">front_hand</span> Grupos Incompatíveis';
+        areaGrupos.classList.remove('hidden');
+        areaGrupos.classList.add('flex');
+        footer.classList.add('hidden');
+        renderizarGruposModal();
+    }
     
     if (tipo === 'inseparaveis') {
         titulo.innerHTML = '<span class="material-symbols-outlined text-primary-container">link</span> Grupos Inseparáveis';
-        areaInseparaveis.classList.remove('hidden');
-        areaInseparaveis.classList.add('flex');
+        areaGrupos.classList.remove('hidden');
+        areaGrupos.classList.add('flex');
         footer.classList.add('hidden');
-        renderizarGruposInseparaveis();
+        renderizarGruposModal();
     }
 
     renderizarCheckboxesModal();
@@ -131,13 +141,15 @@ function abrirModal(tipo) {
 
 function fecharModal() {
     document.getElementById('modalOverlay').classList.add('hidden');
-    if(modalContext === 'inseparaveis') atualizarChipsUI();
+    if (modalContext === 'inseparaveis' || modalContext === 'incompativeis') atualizarChipsUI();
 }
 
 function renderizarCheckboxesModal() {
     const container = document.getElementById('modalListaAlunos');
     const busca = document.getElementById('modalBusca').value.toLowerCase();
+    
     const flatInseparaveis = estadoAtual.inseparaveis.flat();
+    const flatIncompativeis = estadoAtual.incompativeis.flat();
 
     let html = '';
     alunosCarregados.forEach(aluno => {
@@ -149,26 +161,29 @@ function renderizarCheckboxesModal() {
         
         const isPcd = estadoAtual.pcd.some(p => p.id === aluno.id);
         const pcdObj = estadoAtual.pcd.find(p => p.id === aluno.id);
-        const isIncomp = estadoAtual.incompativeis.includes(aluno.id);
+        const isIncomp = flatIncompativeis.includes(aluno.id);
         const isInsep = flatInseparaveis.includes(aluno.id);
 
         if (modalContext === 'pcd') {
             isChecked = isPcd;
-            if (!isChecked && isIncomp) { isDisabled = true; reason = '(Incompatível)'; }
+            if (!isChecked) {
+                if (isInsep) { isDisabled = true; reason = '(Agrupado)'; }
+                else if (isIncomp) { isDisabled = true; reason = '(Incompatível)'; }
+            }
         }
         else if (modalContext === 'especiais') {
             isChecked = estadoAtual.especiais.includes(aluno.id);
         }
         else if (modalContext === 'incompativeis') {
-            isChecked = isIncomp;
-            if (!isChecked) {
-                if (isPcd) { isDisabled = true; reason = '(PCD)'; }
-                else if (isInsep) { isDisabled = true; reason = '(Inseparável)'; }
-            }
+            isChecked = false;
+            if (isIncomp) { isDisabled = true; reason = '(Já no conflito)'; }
+            else if (isPcd) { isDisabled = true; reason = '(PCD)'; }
+            else if (isInsep) { isDisabled = true; reason = '(Inseparável)'; }
         }
         else if (modalContext === 'inseparaveis') {
             isChecked = false;
             if (isInsep) { isDisabled = true; reason = '(Já agrupado)'; }
+            else if (isPcd) { isDisabled = true; reason = '(PCD)'; }
             else if (isIncomp) { isDisabled = true; reason = '(Incompatível)'; }
         }
 
@@ -210,7 +225,7 @@ function salvarModal() {
             }
         });
         estadoAtual.pcd = selecionados;
-    } else if (modalContext !== 'inseparaveis') {
+    } else if (modalContext !== 'inseparaveis' && modalContext !== 'incompativeis') {
         const checkboxes = document.querySelectorAll('#modalListaAlunos input[type="checkbox"]');
         let selecionados = [];
         checkboxes.forEach(cb => { if (cb.checked && !cb.disabled) selecionados.push(cb.value); });
@@ -221,7 +236,7 @@ function salvarModal() {
     fecharModal();
 }
 
-function criarGrupoInseparavel() {
+function criarGrupoModal() {
     const containers = document.querySelectorAll('#modalListaAlunos > div');
     let selecionados = [];
     containers.forEach(div => { 
@@ -232,33 +247,33 @@ function criarGrupoInseparavel() {
         }
     });
 
-    if (selecionados.length < 2) return alert('Selecione pelo menos 2 alunos para formar um grupo inseparável.');
+    if (selecionados.length < 2) return alert('Selecione pelo menos 2 alunos para formar um grupo ou parelha.');
     
-    estadoAtual.inseparaveis.push(selecionados);
-    renderizarGruposInseparaveis();
+    estadoAtual[modalContext].push(selecionados);
+    renderizarGruposModal();
     renderizarCheckboxesModal(); 
 }
 
-function excluirGrupoInseparavel(index) {
-    estadoAtual.inseparaveis.splice(index, 1);
-    renderizarGruposInseparaveis();
+function excluirGrupoModal(index) {
+    estadoAtual[modalContext].splice(index, 1);
+    renderizarGruposModal();
     renderizarCheckboxesModal();
 }
 
-function renderizarGruposInseparaveis() {
-    const container = document.getElementById('listaGruposInseparaveis');
-    if (estadoAtual.inseparaveis.length === 0) {
+function renderizarGruposModal() {
+    const container = document.getElementById('listaGruposModal');
+    if (estadoAtual[modalContext].length === 0) {
         container.innerHTML = '<span class="text-xs text-on-surface-variant font-label-mono italic">Nenhum grupo formado.</span>';
         return;
     }
 
     let html = '';
-    estadoAtual.inseparaveis.forEach((grupo, idx) => {
+    estadoAtual[modalContext].forEach((grupo, idx) => {
         const nomes = grupo.map(id => alunosCarregados.find(a => a.id === id)?.nome || id).join(', ');
         html += `
             <div class="flex justify-between items-center bg-surface p-2 rounded border border-outline-variant">
                 <span class="text-xs font-label-mono text-primary truncate flex-1">${nomes}</span>
-                <button onclick="excluirGrupoInseparavel(${idx})" class="text-error ml-2 hover:opacity-70"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+                <button onclick="excluirGrupoModal(${idx})" class="text-error ml-2 hover:opacity-70"><span class="material-symbols-outlined text-[16px]">delete</span></button>
             </div>
         `;
     });
@@ -270,13 +285,17 @@ function atualizarChipsUI() {
         const div = document.getElementById(`chips_${tipo}`);
         if (!div) return;
         
-        let array = tipo === 'inseparaveis' ? estadoAtual.inseparaveis : estadoAtual[tipo];
+        let array = estadoAtual[tipo];
         if (array.length === 0) { div.innerHTML = ''; return; }
 
         let html = '';
         if (tipo === 'inseparaveis') {
             array.forEach((grupo, idx) => {
                 html += `<span class="border px-2 py-1 rounded text-[10px] font-label-mono ${corClass} flex items-center">Grupo ${idx+1} (${grupo.length})</span>`;
+            });
+        } else if (tipo === 'incompativeis') {
+            array.forEach((grupo, idx) => {
+                html += `<span class="border px-2 py-1 rounded text-[10px] font-label-mono ${corClass} flex items-center">Conflito ${idx+1} (${grupo.length})</span>`;
             });
         } else if (tipo === 'pcd') {
             array.forEach(p => {
@@ -389,10 +408,8 @@ function processarEmbaralhamento() {
     alunos.forEach(a => { if (!usedIds.has(a.id)) chunks.push([a]); });
 
     const isEspecial = (c) => c.some(a => estadoAtual.especiais.includes(a.id));
-    const isIncompativel = (c) => c.some(a => estadoAtual.incompativeis.includes(a.id));
     const isPcd = (c) => c.some(a => estadoAtual.pcd.some(p => p.id === a.id));
     
-    // Calcula o peso de ocupação real da carteira/grupo
     const countSlots = (desk) => desk.reduce((acc, a) => {
         const pcdObj = estadoAtual.pcd.find(p => p.id === a.id);
         return acc + ((pcdObj && pcdObj.consomeVaga) ? 2 : 1);
@@ -404,45 +421,34 @@ function processarEmbaralhamento() {
             let p = estadoAtual.pcd.find(x => x.id === a.id);
             return p && p.consomeVaga;
         });
-        // Se for prova SOLO, e o PCD consome vaga, a mesa DEVE expandir para caber os 2 fisicamente
         if (agrupamento === 'solo' && (checkPcdConsomeVaga(desk) || checkPcdConsomeVaga(chnk))) return 2;
         return max;
     };
 
     const isDeskFull = (desk) => countSlots(desk) >= maxCapacity(desk, null);
     
+    // Motor robusto de colisão: Verifica tamanho físico e regras de Incompatibilidade de Grupos
     const canFitChunk = (desk, chnk) => {
         if (desk.length === 0 && countSlots(chnk) <= maxCapacity(null, chnk)) return true; 
         if (isDeskFull(desk)) return false;
         if (countSlots(desk) + countSlots(chnk) > maxCapacity(desk, chnk)) return false;
+        
+        for (let grupoInc of estadoAtual.incompativeis) {
+            let countInDesk = desk.filter(a => grupoInc.includes(a.id)).length;
+            let countInChnk = chnk.filter(a => grupoInc.includes(a.id)).length;
+            if (countInDesk + countInChnk > 1) return false; 
+        }
+        
         return true;
     };
 
-    let chunksEspeciais = chunks.filter(c => isEspecial(c));
-    let chunksNormais = chunks.filter(c => !isEspecial(c));
-    
-    function mesclarEspacado(listaIncomp, listaResto) {
-        if (listaIncomp.length === 0) return listaResto;
-        if (listaResto.length === 0) return listaIncomp;
-        const esp = Math.max(1, Math.floor(listaResto.length / listaIncomp.length));
-        let resultado = [];
-        let idx = 0;
-        for (let i = 0; i < listaResto.length; i++) {
-            if (i > 0 && i % esp === 0 && idx < listaIncomp.length) resultado.push(listaIncomp[idx++]);
-            resultado.push(listaResto[i]);
-        }
-        while (idx < listaIncomp.length) resultado.push(listaIncomp[idx++]);
-        return resultado;
-    }
-    
-    let finalEspeciais = mesclarEspacado(chunksEspeciais.filter(isIncompativel), chunksEspeciais.filter(c => !isIncompativel(c)));
-    let finalNormais = mesclarEspacado(chunksNormais.filter(isIncompativel), chunksNormais.filter(c => !isIncompativel(c)));
+    let finalEspeciais = chunks.filter(c => isEspecial(c));
+    let finalNormais = chunks.filter(c => !isEspecial(c));
 
     const numGruposFrente = numSalas * numFileiras;
     let gruposFrente = Array.from({ length: numGruposFrente }, () => []);
     let gruposGerais = [];
 
-    // Preenche a FRENTE
     let indexFrente = 0;
     while(finalEspeciais.length > 0) {
         let chunk = finalEspeciais.shift();
@@ -494,7 +500,6 @@ function processarEmbaralhamento() {
         if (gruposFrente[i].length > 0) gruposGerais.push(gruposFrente[i]);
     }
     
-    // Preenche RESTO DAS MESAS
     let currentDesk = [];
     while(finalNormais.length > 0) {
         let chunk = finalNormais[0];
@@ -826,7 +831,7 @@ function gerarListaDetalhada(resultado) {
             
             let style = 'bg-white';
             let tag = '';
-            if(cart.temPcd) { style = 'border-l-4 border-blue-500 bg-blue-50'; tag = '<span class="text-xs text-blue-700 font-bold tracking-widest">PCD/Solo</span>'; }
+            if(cart.temPcd) { style = 'border-l-4 border-blue-500 bg-blue-50'; tag = '<span class="text-xs text-blue-700 font-bold tracking-widest">PCD</span>'; }
             else if(cart.proximoProfessor) { style = 'border-l-4 border-amber-500 bg-amber-50'; tag = '<span class="text-xs text-amber-700 font-bold tracking-widest">Frente</span>'; }
             
             html += `<div class="p-3 mb-2 rounded border border-gray-300 flex items-center gap-4 ${style}">
@@ -858,33 +863,6 @@ function exportarJSON() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-function exportarCSV() {
-    if (!estadoAtual.resultado || !estadoAtual.resultado.salas) return;
-    let csvContent = "Sala;Fileira;Carteira;Aluno;Turma;Condicao\n";
-    estadoAtual.resultado.salas.forEach((sala, indSala) => {
-        sala.forEach(cart => {
-            cart.grupo.forEach(aluno => {
-                let tags = [];
-                if (estadoAtual.pcd.some(p => p.id === aluno.id)) tags.push("PCD");
-                if (estadoAtual.especiais.includes(aluno.id)) tags.push("Frente");
-                
-                let tagsStr = tags.join(", ");
-                csvContent += `${indSala + 1};${cart.fileira + 1};${cart.carteira + 1};"${aluno.nome}";"${aluno.turma}";"${tagsStr}"\n`;
-            });
-        });
-    });
-    const bom = "\uFEFF";
-    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `planilha-${estadoAtual.disciplina || 'mapeamento'}-${new Date().getTime()}.csv`;
-    document.body.appendChild(a); 
-    a.click(); 
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
 function voltarFormulario() {
     document.getElementById('resultSection').classList.add('hidden');
     document.getElementById('resultSection').style.display = 'none';
@@ -910,23 +888,4 @@ function mostrarErro(m) {
 
 function limparErro() { 
     document.getElementById('errorMessage').classList.add('hidden'); 
-}
-
-function processarCSV(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const linhas = e.target.result.split('\n');
-        const sep = e.target.result.includes(';') ? ';' : ',';
-        let res = '';
-        for (let i = (linhas[0].toLowerCase().includes('nome') ? 1 : 0); i < linhas.length; i++) {
-            if (!linhas[i].trim()) continue;
-            const col = linhas[i].split(sep);
-            if (col[0]) res += `${col[0].trim().replace(/["']/g, '')}\n`;
-        }
-        document.getElementById('alunosTemp').value = res.trim();
-        document.getElementById('csvInput').value = ''; 
-    };
-    reader.readAsText(file, 'ISO-8859-1');
 }
