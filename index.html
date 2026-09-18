@@ -67,7 +67,6 @@
 
 <nav class="hidden md:flex flex-col h-[calc(100vh)] py-8 bg-surface-container-lowest w-64 fixed left-0 top-0 border-r border-outline-variant z-40">
     <div class="px-6 mb-8 mt-4">
-        <!-- LINK CORRIGIDO PARA A HOME -->
         <a href="https://diogolabs.dev.br" class="font-headline-lg-mobile font-bold text-primary tracking-tighter hover:text-primary-container transition-colors inline-block">Diogolabs</a>
         <div class="flex items-center gap-3 mt-4">
             <div class="w-10 h-10 rounded-lg bg-surface-variant p-1 flex items-center justify-center text-secondary-container">
@@ -75,7 +74,7 @@
             </div>
             <div>
                 <div class="text-secondary-container font-label-mono font-bold text-sm">Core Engine</div>
-                <div class="text-on-surface-variant text-xs font-label-mono">v4.2 Stable</div>
+                <div class="text-on-surface-variant text-xs font-label-mono">v4.5 Stable</div>
             </div>
         </div>
     </div>
@@ -152,13 +151,7 @@
                         </div>
                         
                         <div class="flex flex-col gap-2">
-                            <div class="flex justify-between items-center">
-                                <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Alunos (Um por linha)</label>
-                                <div class="relative">
-                                    <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(event)">
-                                    <button type="button" class="text-xs font-label-mono text-secondary-container border border-secondary-container px-2 py-1 rounded hover:bg-secondary-container/10" onclick="document.getElementById('csvInput').click()">+ CSV</button>
-                                </div>
-                            </div>
+                            <label class="text-sm font-label-mono text-on-surface-variant uppercase tracking-wider">Alunos (Um por linha)</label>
                             <textarea id="alunosTemp" class="bg-surface-container-highest border border-outline-variant text-primary rounded-md p-3 font-label-mono h-28 w-full focus:outline-none focus:border-primary-container" placeholder="Alice Saraiva..."></textarea>
                         </div>
                         
@@ -246,12 +239,10 @@
                 <div id="mapa" class="tab-content active flex flex-wrap justify-center gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200"></div>
                 <div id="lista" class="tab-content hidden max-h-[500px] overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200"><div id="listContainer"></div></div>
 
-                <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 border-t border-gray-200 pt-4">
+                <!-- Botão de CSV removido para manter a funcionalidade premium futura -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-200 pt-4">
                     <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="imprimirResultado()">
                         <span class="material-symbols-outlined">print</span> IMPRIMIR
-                    </button>
-                    <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarCSV()">
-                        <span class="material-symbols-outlined">table</span> CSV
                     </button>
                     <button class="py-2 rounded font-label-mono flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-100 text-black transition-colors" onclick="exportarJSON()">
                         <span class="material-symbols-outlined">data_object</span> JSON
@@ -265,7 +256,7 @@
     </div>
 </main>
 
-<!-- MODAL GENÉRICO -->
+<!-- MODAL GENÉRICO PARA SELEÇÃO E FORMAÇÃO DE GRUPOS -->
 <div id="modalOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center px-4">
     <div class="bg-surface-container rounded-xl border border-outline-variant w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl modal-enter">
         <div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-highest rounded-t-xl">
@@ -273,12 +264,12 @@
             <button onclick="fecharModal()" class="text-on-surface-variant hover:text-error"><span class="material-symbols-outlined">close</span></button>
         </div>
         
-        <div id="modalGruposInseparaveis" class="hidden p-4 border-b border-outline-variant bg-surface-dim flex-col gap-2">
+        <div id="modalGruposArea" class="hidden p-4 border-b border-outline-variant bg-surface-dim flex-col gap-2">
             <div class="flex justify-between items-center">
                 <span class="text-xs font-label-mono text-on-surface-variant">Grupos Formados:</span>
-                <button onclick="criarGrupoInseparavel()" class="text-xs font-label-mono bg-primary-container text-on-primary-container px-2 py-1 rounded hover:opacity-80">+ FORMAR GRUPO</button>
+                <button onclick="criarGrupoModal()" class="text-xs font-label-mono bg-primary-container text-on-primary-container px-2 py-1 rounded hover:opacity-80">+ FORMAR GRUPO</button>
             </div>
-            <div id="listaGruposInseparaveis" class="flex flex-col gap-2 mt-2"></div>
+            <div id="listaGruposModal" class="flex flex-col gap-2 mt-2"></div>
         </div>
 
         <div class="p-4 flex-1 overflow-y-auto">
