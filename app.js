@@ -1,6 +1,6 @@
 // --- CONFIGURAÇÃO DO GITHUB ---
 // IMPORTANTE: Substitua a URL abaixo pela URL "Raw" do seu README no GitHub.
-const GITHUB_README_URL = "https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPOSITORIO/main/README.md"; 
+const GITHUB_README_URL = "https://raw.githubusercontent.com/diogolabs/class-shuffle/refs/heads/main/README.md"; 
 let manualCarregado = false;
 
 let estadoAtual = {
