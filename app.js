@@ -929,3 +929,13 @@ function mostrarErro(m) {
 function limparErro() { 
     document.getElementById('errorMessage').classList.add('hidden'); 
 }
+// --- FUNÇÕES DO MANUAL ---
+function abrirManual() {
+    document.getElementById('modalManual').classList.remove('hidden');
+    document.getElementById('modalManual').classList.add('flex');
+}
+
+function fecharManual() {
+    document.getElementById('modalManual').classList.add('hidden');
+    document.getElementById('modalManual').classList.remove('flex');
+}
